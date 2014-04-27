@@ -14,7 +14,7 @@
 # Based on code "factura_electronica" by Luis Falcon (GPLv3)
 # Based on code by "openerp-iva-argentina" by Gerardo Allende / Daniel Blanco
 
-"Authentication functions for Argentina's Federal Tax Agency (AFIP) webservices"
+"Authentication functions for Ecuador (SRI) webservices"
 
 # Están muchos valores de importe con valor absoluto, puesto que el CAE
 # en AFIP no acepta valores negativos.

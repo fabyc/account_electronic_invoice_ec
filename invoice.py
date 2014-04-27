@@ -42,25 +42,36 @@ IVA_SRI_CODE.update({
     })
 
 INVOICE_TYPE_SRI_CODE = {
-        ('out_invoice', 'A'): ('1', u'01-Factura A'),
-        ('out_invoice', 'B'): ('6', u'06-Factura B'),
-        ('out_invoice', 'C'): ('11', u'11-Factura C'),
-        ('out_invoice', 'E'): ('19', u'19-Factura E'),
-        ('out_credit_note', 'A'): ('3', u'03-Nota de Crédito A'),
-        ('out_credit_note', 'B'): ('8', u'08-Nota de Crédito B'),
-        ('out_credit_note', 'C'): ('13', u'13-Nota de Crédito C'),
-        ('out_credit_note', 'E'): ('21', u'21-Nota de Crédito E'),
+        'out_invoice': '01',
+        'out_credit_note': '04',
+        'out_debit_note': '05',
+        'reference_guide': '06',
+        'withholding': '07',
         }
+
+ENVIROMENT_TYPE_SRI = [
+        ('1', 'Pruebas'),
+        ('2', 'Produccion'),
+]
+
+BROADCAST_TYPE_SRI = [
+        ('1', 'Normal'),
+        ('2', 'Indisponibilidad del Sistema'),
+]
+
+# Default customer SRI for tests: 
+#    PRUEBAS SERVICIO DE RENTAS INTERNAS
 
 
 class SriWsTransaction(ModelSQL, ModelView):
     'SRI Ws Transaction'
     __name__ = 'account_invoice_ec.sri_transaction'
     pysriws_result = fields.Selection([
-           ('', 'n/a'),
-           ('A', 'Aceptado'),
-           ('R', 'Rechazado'),
-           ('O', 'Observado'),
+           ('', 'N.A.'),
+           ('G', 'Generado'),
+           ('F', 'Firmado'),
+           ('A', 'Autorizado'),
+           ('N', 'No Autorizado'),
        ], 'Resultado', readonly=True,
        help=u"Resultado procesamiento de la Solicitud, devuelto por SRI")
     pysriws_message = fields.Text('Mensaje', readonly=True,
@@ -73,11 +84,8 @@ class SriWsTransaction(ModelSQL, ModelView):
 
 
 class Invoice:
-    'Invoice'
     __name__ = 'account.invoice'
-
-    pos = fields.Many2One('account.pos', 'Point of Sale',
-        on_change=['pos', 'party', 'type', 'company'],
+    pos = fields.Many2One('account.pos', 'Point of Sale', 
         states=_POS_STATES, depends=_DEPENDS)
     invoice_type = fields.Many2One('account.pos.sequence', 'Invoice Type',
         domain=([('pos', '=', Eval('pos'))]),
@@ -85,30 +93,26 @@ class Invoice:
     pysriws_concept = fields.Selection([
        ('1', u'1-Productos'),
        ('2', u'2-Servicios'),
-       ('3', u'3-Productos y Servicios (mercado interno)'),
-       ('4', u'4-Otros (exportación)'),
        ('', ''),
-       ], 'Concepto', select=True, depends=['state'], states={
+       ], 'Concept', select=True, depends=['state'], states={
            'readonly': Eval('state') != 'draft',
            'required': Eval('pos.pos_type') == 'electronic',
         })
-    pysriws_billing_start_date = fields.Date('Fecha Desde',
-       states=_BILLING_STATES, depends=_DEPENDS,
-       help=u"Seleccionar fecha de fin de servicios - Sólo servicios")
-    pysriws_billing_end_date = fields.Date('Fecha Hasta',
-       states=_BILLING_STATES, depends=_DEPENDS,
-       help=u"Seleccionar fecha de inicio de servicios - Sólo servicios")
     pysriws_cae = fields.Char('CAE', size=14, readonly=True,
        help=u"Código de Autorización Electrónico, devuelto por SRI")
     pysriws_cae_due_date = fields.Date('Vencimiento CAE', readonly=True,
        help=u"Fecha tope para verificar CAE, devuelto por SRI")
     pysriws_barcode = fields.Char(u'Codigo de Barras', size=40,
         help=u"Código de barras para usar en la impresión", readonly=True,)
-    pysriws_number = fields.Char(u'Número', size=13, readonly=True,
+    pysriws_number = fields.Char('Number', size=13, readonly=True,
             help=u"Número de factura informado a la SRI")
     transactions = fields.One2Many('account_invoice_ec.sri_transaction',
-                                   'invoice', u"Transacciones",
-                                   readonly=True)
+           'invoice', u"Transacciones",
+           readonly=True)
+    enviroment_type = fields.Selection(ENVIROMENT_TYPE_SRI,
+        'Enviroment Type', required=False)
+    broadcast_type = fields.Selection(BROADCAST_TYPE_SRI,
+        'Enviroment Type', required=False)
 
     @classmethod
     def __setup__(cls):
@@ -144,6 +148,10 @@ class Invoice:
                 u'El campo «Tipo de factura» en «Factura» es requerido.',
             })
 
+    @staticmethod
+    def default_enviroment_type():
+        return 1
+    
     @classmethod
     def validate(cls, invoices):
         super(Invoice, cls).validate(invoices)
@@ -160,9 +168,9 @@ class Invoice:
                     'party': self.party.rec_name,
                     })
 
-    def on_change_pos(self):
+    @fields.depends('pos', 'party', 'type', 'company')
+    def on_change_pos(self, name=None):
         PosSequence = Pool().get('account.pos.sequence')
-
         if not self.pos:
             return {'invoice_type': None}
 
@@ -190,9 +198,7 @@ class Invoice:
         else:
             kind = 'C'
 
-        invoice_type, invoice_type_desc = INVOICE_TYPE_SRI_CODE[
-            (self.type, kind)
-            ]
+        invoice_type = INVOICE_TYPE_SRI_CODE[self.type]
         sequences = PosSequence.search([
             ('pos', '=', self.pos.id),
             ('invoice_type', '=', invoice_type)
@@ -203,7 +209,6 @@ class Invoice:
             self.raise_user_error('too_many_sequences', invoice_type_desc)
         else:
             res['invoice_type'] = sequences[0].id
-
         return res
 
     def set_number(self):
