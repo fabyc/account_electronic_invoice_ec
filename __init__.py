@@ -5,6 +5,7 @@ from .company import *
 from .pos import *
 from .party import *
 from .address import *
+from .electronic_voucher import *
 
 def register():
     Pool.register(
@@ -12,9 +13,10 @@ def register():
         PosSequence,
         Invoice,
         Company,
-        AfipWSTransaction,
+        SriWsTransaction,
         Party,
         Address,
+        ElectronicVoucher,
         module='account_invoice_ar', type_='model')
     Pool.register(
         InvoiceReport,

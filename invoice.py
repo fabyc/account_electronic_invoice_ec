@@ -41,58 +41,23 @@ IVA_SRI_CODE.update({
     Decimal('0.27'): 6,
     })
 
-INVOICE_TYPE_SRI_CODE = {
-        'out_invoice': '01',
-        'out_credit_note': '04',
-        'out_debit_note': '05',
-        'reference_guide': '06',
-        'withholding': '07',
-        }
-
-ENVIROMENT_TYPE_SRI = [
-        ('1', 'Pruebas'),
-        ('2', 'Produccion'),
-]
-
-BROADCAST_TYPE_SRI = [
-        ('1', 'Normal'),
-        ('2', 'Indisponibilidad del Sistema'),
-]
-
 # Default customer SRI for tests: 
 #    PRUEBAS SERVICIO DE RENTAS INTERNAS
-
-
-class SriWsTransaction(ModelSQL, ModelView):
-    'SRI Ws Transaction'
-    __name__ = 'account_invoice_ec.sri_transaction'
-    pysriws_result = fields.Selection([
-           ('', 'N.A.'),
-           ('G', 'Generado'),
-           ('F', 'Firmado'),
-           ('A', 'Autorizado'),
-           ('N', 'No Autorizado'),
-       ], 'Resultado', readonly=True,
-       help=u"Resultado procesamiento de la Solicitud, devuelto por SRI")
-    pysriws_message = fields.Text('Mensaje', readonly=True,
-       help=u"Mensaje de error u observación, devuelto por SRI")
-    pysriws_xml_request = fields.Text('Requerimiento XML', readonly=True,
-       help=u"Mensaje XML enviado a SRI (depuración)")
-    pysriws_xml_response = fields.Text('Respuesta XML', readonly=True,
-       help=u"Mensaje XML recibido de SRI (depuración)")
-    invoice = fields.Many2One('account.invoice', 'Invoice')
 
 
 class Invoice:
     __name__ = 'account.invoice'
     pos = fields.Many2One('account.pos', 'Point of Sale', 
         states=_POS_STATES, depends=_DEPENDS)
+    electronic_voucher = fields.Many2One('account.electronic_voucher',
+        'Electronic Voucher', states=_POS_STATES, depends=_DEPENDS)
     invoice_type = fields.Many2One('account.pos.sequence', 'Invoice Type',
         domain=([('pos', '=', Eval('pos'))]),
         states=_POS_STATES, depends=_DEPENDS)
+    """
     pysriws_concept = fields.Selection([
-       ('1', u'1-Productos'),
-       ('2', u'2-Servicios'),
+       ('1', 'Productos'),
+       ('2', 'Servicios'),
        ('', ''),
        ], 'Concept', select=True, depends=['state'], states={
            'readonly': Eval('state') != 'draft',
@@ -106,18 +71,13 @@ class Invoice:
         help=u"Código de barras para usar en la impresión", readonly=True,)
     pysriws_number = fields.Char('Number', size=13, readonly=True,
             help=u"Número de factura informado a la SRI")
+    """
     transactions = fields.One2Many('account_invoice_ec.sri_transaction',
-           'invoice', u"Transacciones",
-           readonly=True)
-    enviroment_type = fields.Selection(ENVIROMENT_TYPE_SRI,
-        'Enviroment Type', required=False)
-    broadcast_type = fields.Selection(BROADCAST_TYPE_SRI,
-        'Enviroment Type', required=False)
+           'invoice', 'Transactions', readonly=True)
 
     @classmethod
     def __setup__(cls):
         super(Invoice, cls).__setup__()
-
         cls._buttons.update({
             'sri_post': {
                 'invisible': ~Eval('state').in_(['draft', 'validated']),
@@ -580,6 +540,25 @@ class Invoice:
         if digito == 10:
             digito = 0
         return str(digito)
+
+class SriWsTransaction(ModelSQL, ModelView):
+    'SRI Ws Transaction'
+    __name__ = 'account_invoice_ec.sri_transaction'
+    pysriws_result = fields.Selection([
+           ('', 'N.A.'),
+           ('G', 'Generado'),
+           ('F', 'Firmado'),
+           ('A', 'Autorizado'),
+           ('N', 'No Autorizado'),
+       ], 'Resultado', readonly=True,
+       help=u"Resultado procesamiento de la Solicitud, devuelto por SRI")
+    pysriws_message = fields.Text('Mensaje', readonly=True,
+       help=u"Mensaje de error u observación, devuelto por SRI")
+    pysriws_xml_request = fields.Text('Requerimiento XML', readonly=True,
+       help=u"Mensaje XML enviado a SRI (depuración)")
+    pysriws_xml_response = fields.Text('Respuesta XML', readonly=True,
+       help=u"Mensaje XML recibido de SRI (depuración)")
+    invoice = fields.Many2One('account.invoice', 'Invoice')
 
 
 class InvoiceReport(Report):

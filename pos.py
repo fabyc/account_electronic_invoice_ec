@@ -10,7 +10,6 @@ __all__ = ['Pos', 'PosSequence']
 class Pos(ModelSQL, ModelView):
     'Point of Sale'
     __name__ = 'account.pos'
-
     name = fields.Function(fields.Char('Name'), 'get_name')
     number = fields.Integer('Punto de Venta SRI', required=True,
         help=u"Prefijo de emisión habilitado en SRI")
@@ -20,7 +19,8 @@ class Pos(ModelSQL, ModelView):
             ('manual', u'Manual'),
             ('electronic', u'Electronic'),
             ('fiscal_printer', u'Fiscal Printer'),
-            ], 'Pos Type', required=True)
+            ], 'Pos Type')
+    """
     pysriws_electronic_invoice_service = fields.Selection([
             ('', ''),
             ('wsfe', u'Mercado interno -sin detalle- RG2485 (WSFEv1)'),
@@ -46,12 +46,11 @@ class Pos(ModelSQL, ModelView):
             dict(pos.fields_get(fields_names=['pos_type'])\
             ['pos_type']['selection'])[pos.pos_type]
         return res
-
+    """
 
 class PosSequence(ModelSQL, ModelView):
     'Point of Sale Sequences'
     __name__ = 'account.pos.sequence'
-
     pos = fields.Many2One('account.pos', 'Point of Sale')
     invoice_type = fields.Selection([
             ('', ''),
