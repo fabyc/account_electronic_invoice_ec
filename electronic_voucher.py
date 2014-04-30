@@ -1,4 +1,6 @@
 #! -*- coding: utf8 -*-
+import lxml.etree
+import lxml.builder
 
 from trytond.model import ModelView, ModelSQL, fields
 from trytond.pyson import Eval
