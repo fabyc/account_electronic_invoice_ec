@@ -13,15 +13,15 @@
             <field name="inherit" ref="account_invoice.invoice_view_tree"/>
             <field name="name">invoice_tree</field>
         </record>
-        <record model="ir.ui.view" id="afip_transaction_view_tree">
-            <field name="model">account_invoice_ar.afip_transaction</field>
+        <record model="ir.ui.view" id="sri_evoucher_view_tree">
+            <field name="model">account.electronic_voucher</field>
             <field name="type">tree</field>
-            <field name="name">transaction_tree</field>
+            <field name="name">evoucher_tree</field>
         </record>
-        <record model="ir.ui.view" id="afip_transaction_view_form">
-            <field name="model">account_invoice_ar.afip_transaction</field>
+        <record model="ir.ui.view" id="sri_evoucher_view_form">
+            <field name="model">account.electronic_voucher</field>
             <field name="type">form</field>
-            <field name="name">transaction_form</field>
+            <field name="name">evoucher_form</field>
         </record>
 
         <!--
@@ -35,10 +35,8 @@
             <field name="name">Invoice</field>
             <field name="model">account.invoice</field>
             <field name="report_name">account.invoice</field>
-            <field name="report">account_invoice_ar/invoice.odt</field>
-            <field name="style">account_invoice_ar/header_A4.odt</field>
-            <field name="template_extension">odt</field>
-            <field name="extension"></field>
+            <field name="report">account_electronic_invoice_ec/invoice.odt</field>
+            <field name="style">company/letter.odt</field>
         </record>
     </data>
 </tryton>

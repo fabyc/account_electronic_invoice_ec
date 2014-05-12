@@ -1,8 +1,8 @@
 #! -*- coding: utf8 -*-
 import lxml
 from trytond.model import ModelView, ModelSQL, fields
-from trytond.pool import Pool
 from builder import metaprocess_xml
+from trytond.pyson import Eval
 
 try:
     import bcrypt
@@ -40,7 +40,7 @@ class ElectronicVoucher(ModelSQL, ModelView):
     number = fields.Char('Reference', help='Sequence Document', size=9)
     release_date = fields.Date('Release Date', required=True,
         select=True)
-    serie = fields.Integer('Serie SRI', size=6, required=True)
+    serie = fields.Integer('Serial SRI', size=6, required=False)
     enviroment_type = fields.Selection(ENVIROMENT_TYPE_SRI,
         'Enviroment Type', required=False)
     broadcast_type = fields.Selection(BROADCAST_TYPE_SRI, 'Broadcast Type', 
@@ -59,12 +59,30 @@ class ElectronicVoucher(ModelSQL, ModelView):
            ('waiting', 'Waiting'),
            ('accepted', 'Accepted'),
        ], 'State', select=True)
+    pysriws_concept = fields.Selection([
+       ('1', 'Products'),
+       ('2', 'Services'),
+       ('', ''),
+       ], 'Concept', select=True, depends=['state'], states={
+           'readonly': Eval('state') != 'draft',
+           'required': Eval('pos.pos_type') == 'electronic',
+        })
+    """
+    pysriws_cae = fields.Char('CAE', size=14, readonly=True,
+       help=u"Código de Autorización Electrónico, devuelto por SRI")
+    pysriws_cae_due_date = fields.Date('Vencimiento CAE', readonly=True,
+       help=u"Fecha tope para verificar CAE, devuelto por SRI")
+    pysriws_barcode = fields.Char(u'Codigo de Barras', size=40,
+        help=u"Código de barras para usar en la impresión", readonly=True,)
+    pysriws_number = fields.Char('Number', size=13, readonly=True,
+            help=u"Número de factura informado a la SRI")
+    """
 
     @classmethod
     def set_token(cls, value):
         if value == 'x' * 10:
             return
-        to_write = []
+        #to_write = []
         """
         for company in companies:
             to_write.extend([[company], {

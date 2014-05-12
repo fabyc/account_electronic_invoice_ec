@@ -1,7 +1,6 @@
 #! -*- coding: utf8 -*-
 
 from trytond.model import ModelView, ModelSQL, fields
-from trytond.pyson import Eval
 from trytond.pool import Pool
 
 __all__ = ['Pos', 'PosSequence']
@@ -10,9 +9,9 @@ __all__ = ['Pos', 'PosSequence']
 class Pos(ModelSQL, ModelView):
     'Point of Sale'
     __name__ = 'account.pos'
-    name = fields.Function(fields.Char('Name'), 'get_name')
-    number = fields.Integer('Punto de Venta SRI', required=True,
-        help=u"Prefijo de emisión habilitado en SRI")
+    name = fields.Char('Name', required=True)
+    number = fields.Integer('Point of Sale SRI', required=True,
+        help="Sequence of Point of Sale location for SRI")
     pos_sequences = fields.One2Many('account.pos.sequence', 'pos',
         'Point of Sale')
     pos_type = fields.Selection([
@@ -54,12 +53,11 @@ class PosSequence(ModelSQL, ModelView):
     pos = fields.Many2One('account.pos', 'Point of Sale')
     invoice_type = fields.Selection([
             ('', ''),
-            ('1', u'Factura A'),
-            ('2', u'Nota de Débito A'),
-            ('3', u'Nota de Crédito A'),
-            ('4', u'Recibos A'),
-            ], 'Tipo Comprobante SRI', required=True,
-        help="Tipo de Comprobante SRI")
+            ('1', 'Invoice A'),
+            ('2', 'Debit Note A'),
+            ('3', 'Credit Note A'),
+            ('3', 'Delivery Form A'),
+            ], 'SRI Voucher Type', required=True)
     invoice_sequence = fields.Property(fields.Many2One('ir.sequence',
             'Sequence', required=True,
             domain=[('code', '=', 'account.invoice')],

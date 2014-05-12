@@ -17,7 +17,7 @@ def register():
         Party,
         Address,
         ElectronicVoucher,
-        module='account_invoice_ar', type_='model')
+        module='account_invoice_ec', type_='model')
     Pool.register(
         InvoiceReport,
-        module='account_invoice_ar', type_='report')
+        module='account_invoice_ec', type_='report')

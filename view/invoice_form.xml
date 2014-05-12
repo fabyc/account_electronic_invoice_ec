@@ -1,28 +1,25 @@
 <?xml version="1.0"?>
 <data>
     <xpath expr="/form/notebook/page[@id='payment']" position="after">
-        <page string="Factura Electronica Argentina" id="electronic_invoice"
+        <page string="Electronic Invoice" id="electronic_invoice"
             states="{'invisible': Equal(Eval('pos.pos_type'), 'electronic')}">
-            <label name="pyafipws_concept"/>
-            <field name="pyafipws_concept"/>
+            <label name="sri_concept"/>
+            <field name="sri_concept"/>
             <newline/>
-            <label name="pyafipws_billing_start_date"/>
-            <field name="pyafipws_billing_start_date"/>
-            <label name="pyafipws_billing_end_date"/>
-            <field name="pyafipws_billing_end_date"/>
+            <label name="sri_billing_start_date"/>
+            <field name="sri_billing_start_date"/>
+            <label name="sri_billing_end_date"/>
+            <field name="sri_billing_end_date"/>
             <newline/>
-            <label name="pyafipws_cae"/>
-            <field name="pyafipws_cae"/>
-            <label name="pyafipws_cae_due_date"/>
-            <field name="pyafipws_cae_due_date"/>
+            <label name="sri_cae"/>
+            <field name="sri_cae"/>
+            <label name="sri_cae_due_date"/>
+            <field name="sri_cae_due_date"/>
 
             <newline />
-            <field name="transactions" colspan="4"/>
+            <field name="electronic_vouchers" colspan="4"/>
         </page>
     </xpath>
-
-    <xpath expr="/form/label[@name='number']" position="replace"/>
-    <xpath expr="/form/field[@name='number']" position="replace"/>
     <xpath
         expr="/form/field[@name='journal']"
         position="after">

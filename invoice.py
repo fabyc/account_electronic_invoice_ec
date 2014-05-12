@@ -19,6 +19,7 @@ __metaclass__ = PoolMeta
 _STATES = {
     'readonly': Eval('state') != 'draft',
 }
+
 _DEPENDS = ['state']
 
 _BILLING_STATES = _STATES.copy()
@@ -49,31 +50,11 @@ class Invoice:
     __name__ = 'account.invoice'
     pos = fields.Many2One('account.pos', 'Point of Sale', 
         states=_POS_STATES, depends=_DEPENDS)
-    electronic_voucher = fields.Many2One('account.electronic_voucher',
-        'Electronic Voucher', states=_POS_STATES, depends=_DEPENDS)
     invoice_type = fields.Many2One('account.pos.sequence', 'Invoice Type',
         domain=([('pos', '=', Eval('pos'))]),
         states=_POS_STATES, depends=_DEPENDS)
-    """
-    pysriws_concept = fields.Selection([
-       ('1', 'Productos'),
-       ('2', 'Servicios'),
-       ('', ''),
-       ], 'Concept', select=True, depends=['state'], states={
-           'readonly': Eval('state') != 'draft',
-           'required': Eval('pos.pos_type') == 'electronic',
-        })
-    pysriws_cae = fields.Char('CAE', size=14, readonly=True,
-       help=u"Código de Autorización Electrónico, devuelto por SRI")
-    pysriws_cae_due_date = fields.Date('Vencimiento CAE', readonly=True,
-       help=u"Fecha tope para verificar CAE, devuelto por SRI")
-    pysriws_barcode = fields.Char(u'Codigo de Barras', size=40,
-        help=u"Código de barras para usar en la impresión", readonly=True,)
-    pysriws_number = fields.Char('Number', size=13, readonly=True,
-            help=u"Número de factura informado a la SRI")
-    """
-    transactions = fields.One2Many('account_invoice_ec.sri_transaction',
-           'invoice', 'Transactions', readonly=True)
+    electronic_vouchers = fields.One2Many('account.electronic_voucher',
+           'invoice', 'Electronic Invoice', readonly=True)
 
     @classmethod
     def __setup__(cls):
@@ -135,6 +116,7 @@ class Invoice:
             return {'invoice_type': None}
 
         res = {}
+        """
         client_iva = None
         company_iva = None
         if self.party:
@@ -157,7 +139,7 @@ class Invoice:
                 kind = 'E'
         else:
             kind = 'C'
-
+        """
         invoice_type = INVOICE_TYPE_SRI_CODE[self.type]
         sequences = PosSequence.search([
             ('pos', '=', self.pos.id),
@@ -221,7 +203,7 @@ class Invoice:
         Company = pool.get('company.company')
         company_id = Transaction().context.get('company')
         if not company_id:
-            logger.info(u'No hay companía')
+            logger.info('There is not company!')
             return
 
         company = Company(company_id)
@@ -446,7 +428,7 @@ class Invoice:
         if service in ('wsfex', 'wsmtxca'):
             for line in self.lines:
                 codigo = line.product.code
-                u_mtx = 1                       # TODO: get it from uom?
+                u_mtx = 1  # TODO: get it from uom?
                 cod_mtx = 'xxx' #FIXME: ean13
                 ds = line.description
                 qty = line.quantity
@@ -541,6 +523,7 @@ class Invoice:
             digito = 0
         return str(digito)
 
+
 class SriWsTransaction(ModelSQL, ModelView):
     'SRI Ws Transaction'
     __name__ = 'account_invoice_ec.sri_transaction'
@@ -550,7 +533,7 @@ class SriWsTransaction(ModelSQL, ModelView):
            ('F', 'Firmado'),
            ('A', 'Autorizado'),
            ('N', 'No Autorizado'),
-       ], 'Resultado', readonly=True,
+       ], 'Result', readonly=True,
        help=u"Resultado procesamiento de la Solicitud, devuelto por SRI")
     pysriws_message = fields.Text('Mensaje', readonly=True,
        help=u"Mensaje de error u observación, devuelto por SRI")
@@ -558,7 +541,7 @@ class SriWsTransaction(ModelSQL, ModelView):
        help=u"Mensaje XML enviado a SRI (depuración)")
     pysriws_xml_response = fields.Text('Respuesta XML', readonly=True,
        help=u"Mensaje XML recibido de SRI (depuración)")
-    invoice = fields.Many2One('account.invoice', 'Invoice')
+    invoice = fields.Many2One('account.electronic_voucher', 'Electronic Voucher')
 
 
 class InvoiceReport(Report):
@@ -612,41 +595,6 @@ class InvoiceReport(Report):
         else:
             return Decimal('00.00')
 
-    @classmethod
-    def _get_condicion_iva_cliente(cls, Invoice, invoice):
-        return dict(invoice.party._fields['iva_condition'].selection)[invoice.party.iva_condition]
-
-    @classmethod
-    def _get_vat_number_cliente(cls, Invoice, invoice):
-        value = invoice.party.vat_number
-        if value:
-            return '%s-%s-%s' % (value[:2], value[2:-1], value[-1])
-        return ''
-
-    @classmethod
-    def _get_tipo_comprobante(cls, Invoice, invoice):
-        return dict(invoice.invoice_type._fields['invoice_type'].selection)[invoice.invoice_type.invoice_type][-1]
-
-    @classmethod
-    def _get_nombre_comprobante(cls, Invoice, invoice):
-        return dict(invoice.invoice_type._fields['invoice_type'].selection)[invoice.invoice_type.invoice_type][3:-2]
-
-    @classmethod
-    def _get_codigo_comprobante(cls, Invoice, invoice):
-        return dict(invoice.invoice_type._fields['invoice_type'].selection)[invoice.invoice_type.invoice_type][:2]
-
-    @classmethod
-    def _get_vat_number(cls, company):
-        value = company.party.vat_number
-        return '%s-%s-%s' % (value[:2], value[2:-1], value[-1])
-
-    @classmethod
-    def _get_condicion_iva(cls, company):
-        return dict(company.party._fields['iva_condition'].selection)[company.party.iva_condition]
-
-    @classmethod
-    def _get_iibb_type(cls, company):
-        return company.party.iibb_type.upper() + ' ' + company.party.iibb_number
 
     """
     FIXME
