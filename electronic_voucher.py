@@ -1,10 +1,8 @@
 #! -*- coding: utf8 -*-
-import lxml.etree
-import lxml.builder
-
+import lxml
 from trytond.model import ModelView, ModelSQL, fields
-from trytond.pyson import Eval
 from trytond.pool import Pool
+from builder import metaprocess_xml
 
 try:
     import bcrypt
@@ -13,6 +11,10 @@ except ImportError:
 
 
 __all__ = ['ElectronicVoucher']
+
+_STATES = {
+    'readonly': Eval('state') != 'draft',
+}
 
 VOUCHER_TYPE_SRI = {
         'out_invoice': '01',
@@ -48,6 +50,8 @@ class ElectronicVoucher(ModelSQL, ModelView):
     check_digit = fields.Integer('Check Digit', size=1)
     signature_token = fields.Char('Sign Token')
     xml_file = fields.Binary('Xml File')
+    invoice = fields.Many2One('account.invoice', 'Invoice',
+            states=_STATES, required=False)
     state = fields.Selection([
            ('draft', 'Draft'),
            ('submitted', 'Submitted'),
@@ -61,13 +65,135 @@ class ElectronicVoucher(ModelSQL, ModelView):
         if value == 'x' * 10:
             return
         to_write = []
+        """
         for company in companies:
             to_write.extend([[company], {
                         'signature_token': cls.hash_password(value),
                         }])
         cls.write(*to_write)
+        """
 
-    """
+
+    def _create_evoucher(self, data):
+        E = lxml.builder.ElementMaker()
+        #------------ INFOTRIBUTARIA ------------
+        INFOTRIBUTARIA = {
+            'infoTributaria': [
+                    [
+                    ('ambiente', data['ambiente']),
+                    ('tipoEmision', data['tipoEmision']),
+                    ('razonSocial', data['razonSocial']),
+                    ('nombreComercial', data['nombreComercial']),
+                    ('ruc',  data['ruc']),
+                    ('claveAcceso',  data['claveAcceso']),
+                    ('codDoc',  data['codDoc']),
+                    ('estab',  data['estab']),
+                    ('ptoEmi', data['ptoEmi']),
+                    ('secuencial', data['secuencial']),
+                    ('dirMatriz', data['dirMatriz']),
+                    ],]
+        }
+        """
+        #------------ INFOFACTURA ------------
+        TOTAL_TAXES = {'totalImpuesto': [[
+                    ('codigo', '2'),
+                    ('codigoPorcentaje', '6'),
+                    ('baseImponible', '0.00'),
+                    ('valor', '0.00'),
+                ], [
+                    ('codigo', '3'),
+                    ('codigoPorcentaje', '8'),
+                    ('baseImponible', '10.00'),
+                    ('valor', '10.00'),
+                ], [
+                    ('codigo', '4'),
+                    ('codigoPorcentaje', '11'),
+                    ('baseImponible', '20.00'),
+                    ('valor', '77.00'),
+                ]]
+        }
+
+        INFOFACTURA = {
+            'infoFactura': [[
+                    ('fechaEmision', '21/03/2013'),
+                    ('dirEstablecimiento', 'CLL 31 N 45-81'),
+                    ('contribuyenteEspecial', '12345'),
+                    ('obligadoContabilidad', 'SI'),
+                    ('tipoIdentificacionComprador', '04'),
+                    ('razonSocialComprador', 'SRI PRUEBAS'),
+                    ('identificacionComprador', '9078612345'),
+                    ('totalSinImpuestos', '0.00'),
+                    ('totalDescuento','0.00'),
+                    ('totalConImpuestos', TOTAL_TAXES),
+                    ('propina','0.00'),
+                    ('moneda', 'DOLAR'),
+                ],]
+        }
+
+        #------------ DETALLES ------------
+
+        TAXES1 = {'impuesto': [[
+                    ('codigo', '2'),
+                    ('codigoPorcentaje', '6'),
+                    ('tarifa', '6'),
+                    ('baseImponible', '0.00'),
+                    ('valor', '0.00'),
+                ], [
+                    ('codigo', '3'),
+                    ('codigoPorcentaje', '8'),
+                    ('tarifa', '6'),
+                    ('baseImponible', '10.00'),
+                    ('valor', '10.00'),
+                ],]
+        }
+
+        DETALLE = {'detalle': [[
+                ('codigoPrincipal', '011'),
+                ('descripcion', 'JABON FAB'),
+                ('cantidad', '0.0000'),
+                ('precioUnitario', '0.00'),
+                ('descuento', '0.00'),
+                ('precioTotalSinImpuesto', '0.00'),
+                ('impuestos', TAXES1),
+                ], [
+                ('codigoPrincipal', '011'),
+                ('descripcion', 'COCACOLA'),
+                ('cantidad', '3.0000'),
+                ('precioUnitario', '1320.00'),
+                ('descuento', '0.00'),
+                ('precioTotalSinImpuesto', '0.00'),
+                ('impuestos', TAXES1),
+                ], ]
+        }
+
+        #------------ RETENCIONES ------------
+        RETENCIONES = {'retencion': [[
+                    ('codigo', '8'),
+                    ('codigoPorcentaje', '316'),
+                    ('tarifa', '6'),
+                    ('valor', '0.00'),
+                ], [
+                    ('codigo', '9'),
+                    ('codigoPorcentaje', '321'),
+                    ('tarifa', '0.00'),
+                    ('valor', '10.00'),
+                ],]
+        }
+
+        #------------ INFOADICIONAL ------------
+        INFOAD = [
+                    E.campoAdicional('Lenny Kravitz Street', nombre=u'Dirección'),
+                    E.campoAdicional('rockstar@itunes.com', nombre='Email'),
+                ]
+        """
+        infoTributaria_ = metaprocess_xml(INFOTRIBUTARIA)[0]
+        evoucher = E.factura(
+                infoTributaria_,
+        )
+
+        print lxml.etree.tostring(evoucher, pretty_print=True)
+
+"""
     @classmethod
     def get_name(cls, account_electronic_voucher, name):
         res = {}
@@ -102,4 +228,4 @@ class ElectronicVoucherSequence(ModelSQL, ModelView):
                 )['invoice_type']['selection']:
             type2name[type] = name
         return type2name[self.invoice_type][3:]
-    """
+"""

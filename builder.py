@@ -1,6 +1,5 @@
     #!/usr/bin/python
 #! -*- coding: utf8 -*-
-import lxml.etree as etree
 import lxml.builder
 from functools import partial
 
@@ -11,7 +10,7 @@ def metaprocess_xml(data):
     """
     Parameters
     data :: dict where key is a element and value is a list of element list
-    return :: create 
+    return :: create
     """
     #field = E.field('azul', name='color')
     #field = partial(E, 'field')('azul', name='color')
@@ -141,7 +140,7 @@ INFOAD = [
         ]
 
 #-----------------------------------------------------------------------
-
+"""
 infoTributaria_ = metaprocess_xml(INFOTRIBUTARIA)[0]
 infoFactura_ = metaprocess_xml(INFOFACTURA)[0]
 detalles_ = E.detalles(*metaprocess_xml(DETALLE))
@@ -158,4 +157,4 @@ evoucher = E.factura(
 )
 
 print lxml.etree.tostring(evoucher, pretty_print=True)
-
+"""

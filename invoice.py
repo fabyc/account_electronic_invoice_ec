@@ -13,7 +13,7 @@ from trytond.transaction import Transaction
 from trytond.pool import Pool, PoolMeta
 
 
-__all__ = ['Invoice', 'AfipWSTransaction', 'InvoiceReport']
+__all__ = ['Invoice', 'SriWsTransaction', 'InvoiceReport']
 __metaclass__ = PoolMeta
 
 _STATES = {
@@ -361,7 +361,7 @@ class Invoice:
         customer_name = self.party.name
         if self.party.vat_number:
             if self.party.vat_country == "EC":
-                # use the Argentina SRI's global CUIT for the country:
+                # use the Ecuador SRI's global CUIT for the country:
                 cuit_customer_country = self.party.vat_number
                 id_impositivo = None
             else:
