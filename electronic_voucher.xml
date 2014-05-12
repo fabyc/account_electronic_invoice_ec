@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<tryton>
+    <data>
+        <record model="ir.ui.view" id="sri_evoucher_view_tree">
+            <field name="model">account.electronic_voucher</field>
+            <field name="type">tree</field>
+            <field name="name">evoucher_tree</field>
+        </record>
+        <record model="ir.ui.view" id="sri_evoucher_view_form">
+            <field name="model">account.electronic_voucher</field>
+            <field name="type">form</field>
+            <field name="name">evoucher_form</field>
+        </record>
+
+        <record model="ir.ui.view" id="sri_transaction_view_tree">
+            <field name="model">account_invoice_ec.sri_transaction</field>
+            <field name="type">tree</field>
+            <field name="name">sri_transaction_tree</field>
+        </record>
+        <record model="ir.ui.view" id="sri_transaction_view_form">
+            <field name="model">account_invoice_ec.sri_transaction</field>
+            <field name="type">form</field>
+            <field name="name">sri_transaction_form</field>
+        </record>
+    </data>
+</tryton>

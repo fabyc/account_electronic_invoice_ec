@@ -13,22 +13,6 @@
             <field name="inherit" ref="account_invoice.invoice_view_tree"/>
             <field name="name">invoice_tree</field>
         </record>
-        <record model="ir.ui.view" id="sri_evoucher_view_tree">
-            <field name="model">account.electronic_voucher</field>
-            <field name="type">tree</field>
-            <field name="name">evoucher_tree</field>
-        </record>
-        <record model="ir.ui.view" id="sri_evoucher_view_form">
-            <field name="model">account.electronic_voucher</field>
-            <field name="type">form</field>
-            <field name="name">evoucher_form</field>
-        </record>
-
-        <!--
-        <record model="ir.action.report" id="account_invoice.report_invoice">
-          <field name="active" eval="False"/>
-        </record>
-        -->
 
         <record model="ir.action.report" id="account_invoice.report_invoice">
             <field name="active" eval="True"/>

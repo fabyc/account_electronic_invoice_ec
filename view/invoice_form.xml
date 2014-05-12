@@ -3,38 +3,12 @@
     <xpath expr="/form/notebook/page[@id='payment']" position="after">
         <page string="Electronic Invoice" id="electronic_invoice"
             states="{'invisible': Equal(Eval('pos.pos_type'), 'electronic')}">
-            <label name="sri_concept"/>
-            <field name="sri_concept"/>
-            <newline/>
-            <label name="sri_billing_start_date"/>
-            <field name="sri_billing_start_date"/>
-            <label name="sri_billing_end_date"/>
-            <field name="sri_billing_end_date"/>
-            <newline/>
-            <label name="sri_cae"/>
-            <field name="sri_cae"/>
-            <label name="sri_cae_due_date"/>
-            <field name="sri_cae_due_date"/>
-
-            <newline />
+            <label name="pos"/>
+            <field name="pos"/>
+            <label name="invoice_type"/>
+            <field name="invoice_type"  widget="selection"/>
             <field name="electronic_vouchers" colspan="4"/>
         </page>
-    </xpath>
-    <xpath
-        expr="/form/field[@name='journal']"
-        position="after">
-        <newline/>
-    </xpath>
-    <xpath
-        expr="/form/label[@name='description']"
-        position="before">
-        <newline/>
-        <label name="pos"/>
-        <field name="pos"/>
-        <label name="invoice_type"/>
-        <field name="invoice_type" widget="selection"/>
-        <label name="number"/>
-        <field name="number"/>
     </xpath>
 
 </data>

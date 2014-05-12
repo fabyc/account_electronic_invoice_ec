@@ -10,7 +10,7 @@ except ImportError:
     bcrypt = None
 
 
-__all__ = ['ElectronicVoucher']
+__all__ = ['ElectronicVoucher', 'SriWsTransaction']
 
 _STATES = {
     'readonly': Eval('state') != 'draft',
@@ -33,6 +33,7 @@ BROADCAST_TYPE_SRI = [
         ('1', 'Normal'),
         ('2', 'Indisponibilidad del Sistema'),
 ]
+
 
 class ElectronicVoucher(ModelSQL, ModelView):
     'Electronic Voucher'
@@ -90,7 +91,6 @@ class ElectronicVoucher(ModelSQL, ModelView):
                         }])
         cls.write(*to_write)
         """
-
 
     def _create_evoucher(self, data):
         E = lxml.builder.ElementMaker()
@@ -211,17 +211,8 @@ class ElectronicVoucher(ModelSQL, ModelView):
 
         print lxml.etree.tostring(evoucher, pretty_print=True)
 
+
 """
-    @classmethod
-    def get_name(cls, account_electronic_voucher, name):
-        res = {}
-        for electronic_voucher in cls.browse(account_electronic_voucher):
-            res[electronic_voucher.id] = str(electronic_voucher.number)+ ' - '+\
-            dict(electronic_voucher.fields_get(fields_names=['electronic_voucher_type'])\
-            ['electronic_voucher_type']['selection'])[electronic_voucher.electronic_voucher_type]
-        return res
-
-
 class ElectronicVoucherSequence(ModelSQL, ModelView):
     'Point of Sale Sequences'
     __name__ = 'account.electronic_voucher.sequence'
@@ -247,3 +238,23 @@ class ElectronicVoucherSequence(ModelSQL, ModelView):
             type2name[type] = name
         return type2name[self.invoice_type][3:]
 """
+
+
+class SriWsTransaction(ModelSQL, ModelView):
+    'SRI Ws Transaction'
+    __name__ = 'account_invoice_ec.sri_transaction'
+    pysriws_result = fields.Selection([
+           ('', 'N.A.'),
+           ('G', 'Generado'),
+           ('F', 'Firmado'),
+           ('A', 'Autorizado'),
+           ('N', 'No Autorizado'),
+       ], 'Result', readonly=True,
+       help=u"Result of processing request return by SRI")
+    pysriws_message = fields.Text('Message', readonly=True,
+       help=u"Mensaje de error u observación, devuelto por SRI")
+    pysriws_xml_request = fields.Text('Requerimiento XML', readonly=True,
+       help=u"Mensaje XML enviado a SRI (depuración)")
+    pysriws_xml_response = fields.Text('Respuesta XML', readonly=True,
+       help=u"Mensaje XML recibido de SRI (depuración)")
+    invoice = fields.Many2One('account.electronic_voucher', 'Electronic Voucher')

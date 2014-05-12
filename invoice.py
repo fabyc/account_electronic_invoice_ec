@@ -5,15 +5,14 @@
 import collections
 import logging
 from decimal import Decimal
-
-from trytond.model import ModelSQL, Workflow, fields, ModelView
+from trytond.model import Workflow, fields, ModelView
 from trytond.report import Report
 from trytond.pyson import Eval, And
 from trytond.transaction import Transaction
 from trytond.pool import Pool, PoolMeta
 
 
-__all__ = ['Invoice', 'SriWsTransaction', 'InvoiceReport']
+__all__ = ['Invoice', 'InvoiceReport']
 __metaclass__ = PoolMeta
 
 _STATES = {
@@ -40,9 +39,9 @@ IVA_SRI_CODE.update({
     Decimal('0.105'): 4,
     Decimal('0.21'): 5,
     Decimal('0.27'): 6,
-    })
+})
 
-# Default customer SRI for tests: 
+# Default customer SRI for tests:
 #    PRUEBAS SERVICIO DE RENTAS INTERNAS
 
 
@@ -81,9 +80,9 @@ class Invoice:
                 u'No existe una secuencia para facturas del tipo: %s',
             'too_many_sequences':
                 u'Existe mas de una secuencia para facturas del tipo: %s',
-            'missing_company_iva_condition': ('The iva condition on company '
+            'missing_company_regime_tax': ('The iva condition on company '
                     '"%(company)s" is missing.'),
-            'missing_party_iva_condition': ('The iva condition on party '
+            'missing_party_regime_tax': ('The iva condition on party '
                     '"%(party)s" is missing.'),
             'not_invoice_type':
                 u'El campo «Tipo de factura» en «Factura» es requerido.',
@@ -100,12 +99,12 @@ class Invoice:
             invoice.check_invoice_type()
 
     def check_invoice_type(self):
-        if not self.company.party.iva_condition:
-            self.raise_user_error('missing_company_iva_condition', {
+        if not self.company.party.regime_tax:
+            self.raise_user_error('missing_company_regime_tax', {
                     'company': self.company.rec_name,
                     })
-        if not self.party.iva_condition:
-            self.raise_user_error('missing_party_iva_condition', {
+        if not self.party.regime_tax:
+            self.raise_user_error('missing_party_regime_tax', {
                     'party': self.party.rec_name,
                     })
 
@@ -120,9 +119,9 @@ class Invoice:
         client_iva = None
         company_iva = None
         if self.party:
-            client_iva = self.party.iva_condition
+            client_iva = self.party.regime_tax
         if self.company:
-            company_iva = self.company.party.iva_condition
+            company_iva = self.company.party.regime_tax
 
         if company_iva == 'responsable_inscripto':
             if client_iva is None:
@@ -524,26 +523,6 @@ class Invoice:
         return str(digito)
 
 
-class SriWsTransaction(ModelSQL, ModelView):
-    'SRI Ws Transaction'
-    __name__ = 'account_invoice_ec.sri_transaction'
-    pysriws_result = fields.Selection([
-           ('', 'N.A.'),
-           ('G', 'Generado'),
-           ('F', 'Firmado'),
-           ('A', 'Autorizado'),
-           ('N', 'No Autorizado'),
-       ], 'Result', readonly=True,
-       help=u"Resultado procesamiento de la Solicitud, devuelto por SRI")
-    pysriws_message = fields.Text('Mensaje', readonly=True,
-       help=u"Mensaje de error u observación, devuelto por SRI")
-    pysriws_xml_request = fields.Text('Requerimiento XML', readonly=True,
-       help=u"Mensaje XML enviado a SRI (depuración)")
-    pysriws_xml_response = fields.Text('Respuesta XML', readonly=True,
-       help=u"Mensaje XML recibido de SRI (depuración)")
-    invoice = fields.Many2One('account.electronic_voucher', 'Electronic Voucher')
-
-
 class InvoiceReport(Report):
     __name__ = 'account.invoice'
 
@@ -595,9 +574,6 @@ class InvoiceReport(Report):
         else:
             return Decimal('00.00')
 
-
-    """
-    FIXME
     @classmethod
     def _get_pysriws_barcode_img(cls, Invoice, invoice):
         "Generate the required barcode Interleaved of 7 image using PIL"
@@ -616,4 +592,3 @@ class InvoiceReport(Report):
         image = buffer(output.getvalue())
         output.close()
         return image
-    """
