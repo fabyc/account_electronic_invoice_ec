@@ -41,14 +41,14 @@ class ElectronicVoucher(ModelSQL, ModelView):
     number = fields.Char('Reference', help='Sequence Document', size=9)
     release_date = fields.Date('Release Date', required=True,
         select=True)
-    serie = fields.Integer('Serial SRI', size=6, required=False)
+    serie = fields.Integer('Serial SRI', required=False)
     enviroment_type = fields.Selection(ENVIROMENT_TYPE_SRI,
         'Enviroment Type', required=False)
     broadcast_type = fields.Selection(BROADCAST_TYPE_SRI, 'Broadcast Type', 
         required=False)
     evoucher_type = fields.Selection(VOUCHER_TYPE_SRI, 'E-Voucher Type',
         required=True)
-    check_digit = fields.Integer('Check Digit', size=1)
+    check_digit = fields.Integer('Check Digit')
     signature_token = fields.Char('Sign Token')
     xml_file = fields.Binary('Xml File')
     invoice = fields.Many2One('account.invoice', 'Invoice',

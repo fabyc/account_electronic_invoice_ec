@@ -3,7 +3,6 @@ from trytond.pool import Pool
 from .invoice import *
 from .company import *
 from .pos import *
-from .party import *
 from .address import *
 from .electronic_voucher import *
 
@@ -14,7 +13,6 @@ def register():
         Invoice,
         Company,
         SriWsTransaction,
-        Party,
         Address,
         ElectronicVoucher,
         module='account_invoice_ec', type_='model')

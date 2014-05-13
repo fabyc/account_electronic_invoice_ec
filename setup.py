@@ -26,7 +26,7 @@ minor_version = int(minor_version)
 #Third party (no tryton modules, required)
 requires = []
 for dep in info.get('depends', []):
-    if not re.match(r'(ir|res|workflow|webdav)(\W|$)', dep):
+    if not re.match(r'(ir|res|webdav)(\W|$)', dep):
         requires.append('trytond_%s >= %s.%s, < %s.%s' %
                 (dep, major_version, minor_version, major_version,
                     minor_version + 1))
@@ -34,18 +34,18 @@ for dep in info.get('depends', []):
 requires.append('trytond >= %s.%s, < %s.%s' %
         (major_version, minor_version, major_version, minor_version + 1))
 
-setup(name='account_invoice_ar',
+setup(name='account_electronic_invoice_ec',
     version=info.get('version', '0.0.1'),
     description=info.get('description', ''),
     author=info.get('author', ''),
     author_email=info.get('email', ''),
     url=info.get('website', ''),
-    package_dir={'trytond.modules.account_invoice_ar': '.'},
+    package_dir={'trytond.modules.account_electronic_invoice_ec': '.'},
     packages=[
-        'trytond.modules.account_invoice_ar',
+        'trytond.modules.account_electronic_invoice_ec',
     ],
     package_data={
-        'trytond.modules.account_invoice_ar': (info.get('xml', []) \
+        'trytond.modules.account_electronic_invoice_ec': (info.get('xml', []) \
                 + ['tryton.cfg', 'view/*xml', 'locale/*.po', '*.odt',
                     'icons/*.svg']),
     },
@@ -70,6 +70,6 @@ setup(name='account_invoice_ar',
     zip_safe=False,
     entry_points="""
     [trytond.modules]
-    account_invoice_ar = trytond.modules.account_invoice_ar
+    account_electronic_invoice_ec = trytond.modules.account_electronic_invoice_ec
     """,
 )

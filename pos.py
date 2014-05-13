@@ -1,7 +1,6 @@
 #! -*- coding: utf8 -*-
 
 from trytond.model import ModelView, ModelSQL, fields
-from trytond.pool import Pool
 
 __all__ = ['Pos', 'PosSequence']
 
@@ -63,9 +62,11 @@ class PosSequence(ModelSQL, ModelView):
             domain=[('code', '=', 'account.invoice')],
             context={'code': 'account.invoice'}))
 
+    """
     def get_rec_name(self, name):
         type2name = {}
         for type, name in self.fields_get(fields_names=['invoice_type']
                 )['invoice_type']['selection']:
             type2name[type] = name
         return type2name[self.invoice_type][3:]
+    """
