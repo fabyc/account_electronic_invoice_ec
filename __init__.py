@@ -8,14 +8,14 @@ from .electronic_voucher import *
 
 def register():
     Pool.register(
+        Address,
+        Company,
         Pos,
         PosSequence,
         Invoice,
-        Company,
-        SriWsTransaction,
-        Address,
         ElectronicVoucher,
-        module='account_invoice_ec', type_='model')
+        WsTransaction,
+        module='account_electronic_invoice_ec', type_='model')
     Pool.register(
         InvoiceReport,
-        module='account_invoice_ec', type_='report')
+        module='account_electronic_invoice_ec', type_='report')

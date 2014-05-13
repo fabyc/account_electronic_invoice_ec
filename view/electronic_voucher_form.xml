@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<!-- This file is part of Tryton.  The COPYRIGHT file at the top level of
+this repository contains the full copyright notices and license terms. -->
+<form string="Electronic Voucher">
+    <label name="number"/>
+    <field name="number"/>
+    <label name="release_date"/>
+    <field name="release_date"/>
+    <label name="serie"/>
+    <field name="serie"/>
+    <label name="enviroment_type"/>
+    <field name="enviroment_type"/>
+    <label name="evoucher_type"/>
+    <field name="evoucher_type"/>
+    <label name="check_digit"/>
+    <field name="check_digit"/>
+    <label name="signature_token"/>
+    <field name="signature_token"/>
+    <label name="state"/>
+    <field name="state"/>
+    <label name="pyws_concept"/>
+    <field name="pyws_concept"/>
+</form>

@@ -14,10 +14,15 @@ class Pos(ModelSQL, ModelView):
     pos_sequences = fields.One2Many('account.pos.sequence', 'pos',
         'Point of Sale')
     pos_type = fields.Selection([
-            ('manual', u'Manual'),
-            ('electronic', u'Electronic'),
-            ('fiscal_printer', u'Fiscal Printer'),
+            ('manual', 'Manual'),
+            ('electronic', 'Electronic'),
+            ('fiscal_printer', 'Fiscal Printer'),
             ], 'Pos Type')
+
+    @classmethod
+    def __setup__(cls):
+        super(Pos, cls).__setup__()
+
     """
     pysriws_electronic_invoice_service = fields.Selection([
             ('', ''),
@@ -61,6 +66,10 @@ class PosSequence(ModelSQL, ModelView):
             'Sequence', required=True,
             domain=[('code', '=', 'account.invoice')],
             context={'code': 'account.invoice'}))
+
+    @classmethod
+    def __setup__(cls):
+        super(PosSequence, cls).__setup__()
 
     """
     def get_rec_name(self, name):

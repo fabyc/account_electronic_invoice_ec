@@ -1,14 +1,15 @@
 <?xml version="1.0"?>
+<!-- This file is part of Tryton.  The COPYRIGHT file at the top level of
+this repository contains the full copyright notices and license terms. -->
 <data>
     <xpath expr="/form/notebook/page[@id='payment']" position="after">
-        <page string="Electronic Invoice" id="electronic_invoice"
-            states="{'invisible': Equal(Eval('pos.pos_type'), 'electronic')}">
+        <page string="Electronic Invoice" id="electronic_invoice">
             <label name="pos"/>
             <field name="pos"/>
             <label name="invoice_type"/>
-            <field name="invoice_type"  widget="selection"/>
-            <field name="electronic_vouchers" colspan="4"/>
+            <field name="invoice_type" widget="selection"/>
+            <field name="electronic_vouchers" colspan="4"
+                view_ids="account_electronic_invoice_ec.electronic_voucher_view_tree"/>
         </page>
     </xpath>
-
 </data>

@@ -1,7 +1,6 @@
 #! -*- coding: utf8 -*-
 #This file is part of Tryton.  The COPYRIGHT file at the top level of
 #this repository contains the full copyright notices and license terms.
-
 import collections
 import logging
 from decimal import Decimal
@@ -551,9 +550,9 @@ class InvoiceReport(Report):
                 localcontext=localcontext)
 
     @classmethod
-    def get_line_amount(self,tipo_comprobante, line_amount, line_taxes):
+    def get_line_amount(self, type_voucher, line_amount, line_taxes):
         total = line_amount
-        if tipo_comprobante != 'A':
+        if type_voucher != 'A':
             for tax in line_taxes:
                 total = tax.amount + total
         return total
@@ -568,14 +567,14 @@ class InvoiceReport(Report):
 
     @classmethod
     def _get_invoice_impuestos(cls, Invoice, invoice):
-        tipo_comprobante = cls._get_tipo_comprobante(Invoice, invoice)
+        tipo_comprobante = cls._get_type_voucher(Invoice, invoice)
         if tipo_comprobante == 'A':
             return invoice.tax_amount
         else:
             return Decimal('00.00')
 
     @classmethod
-    def _get_pysriws_barcode_img(cls, Invoice, invoice):
+    def _get_pyws_barcode_img(cls, Invoice, invoice):
         "Generate the required barcode Interleaved of 7 image using PIL"
         from pysriws.pyi25 import PyI25
         from cStringIO import StringIO as StringIO

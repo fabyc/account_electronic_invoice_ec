@@ -10,13 +10,13 @@ except ImportError:
     bcrypt = None
 
 
-__all__ = ['ElectronicVoucher', 'SriWsTransaction']
+__all__ = ['ElectronicVoucher', 'WsTransaction']
 
 _STATES = {
     'readonly': Eval('state') != 'draft',
 }
 
-VOUCHER_TYPE_SRI = {
+EVOUCHER_TYPE = {
         'out_invoice': '01',
         'out_credit_note': '04',
         'out_debit_note': '05',
@@ -24,7 +24,7 @@ VOUCHER_TYPE_SRI = {
         'withholding': '07',
         }
 
-ENVIROMENT_TYPE_SRI = [
+ENVIROMENT_TYPE = [
         ('1', 'Test'),
         ('2', 'Production'),
 ]
@@ -42,12 +42,12 @@ class ElectronicVoucher(ModelSQL, ModelView):
     release_date = fields.Date('Release Date', required=True,
         select=True)
     serie = fields.Integer('Serial SRI', required=False)
-    enviroment_type = fields.Selection(ENVIROMENT_TYPE_SRI,
+    enviroment_type = fields.Selection(ENVIROMENT_TYPE,
         'Enviroment Type', required=False)
     broadcast_type = fields.Selection(BROADCAST_TYPE_SRI, 'Broadcast Type', 
         required=False)
-    evoucher_type = fields.Selection(VOUCHER_TYPE_SRI, 'E-Voucher Type',
-        required=True)
+    evoucher_type = fields.Selection(EVOUCHER_TYPE.items(),
+        'E-Voucher Type', required=True)
     check_digit = fields.Integer('Check Digit')
     signature_token = fields.Char('Sign Token')
     xml_file = fields.Binary('Xml File')
@@ -60,7 +60,7 @@ class ElectronicVoucher(ModelSQL, ModelView):
            ('waiting', 'Waiting'),
            ('accepted', 'Accepted'),
        ], 'State', select=True)
-    pysriws_concept = fields.Selection([
+    pyws_concept = fields.Selection([
        ('1', 'Products'),
        ('2', 'Services'),
        ('', ''),
@@ -78,6 +78,10 @@ class ElectronicVoucher(ModelSQL, ModelView):
     pysriws_number = fields.Char('Number', size=13, readonly=True,
             help=u"Número de factura informado a la SRI")
     """
+
+    @classmethod
+    def __setup__(cls):
+        super(ElectronicVoucher, cls).__setup__()
 
     @classmethod
     def set_token(cls, value):
@@ -240,9 +244,9 @@ class ElectronicVoucherSequence(ModelSQL, ModelView):
 """
 
 
-class SriWsTransaction(ModelSQL, ModelView):
+class WsTransaction(ModelSQL, ModelView):
     'SRI Ws Transaction'
-    __name__ = 'account_invoice_ec.sri_transaction'
+    __name__ = 'account.sri_transaction'
     pysriws_result = fields.Selection([
            ('', 'N.A.'),
            ('G', 'Generado'),
