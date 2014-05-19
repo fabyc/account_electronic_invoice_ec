@@ -9,7 +9,7 @@ E = lxml.builder.ElementMaker()
 def metaprocess_xml(data):
     """
     Parameters
-    data :: dict where key is a element and value is a list of element list
+    data :: dict where key is an element and value is a list of elements list
     return :: create
     """
     #field = E.field('azul', name='color')
@@ -140,21 +140,24 @@ INFOAD = [
         ]
 
 #-----------------------------------------------------------------------
-"""
+
 infoTributaria_ = metaprocess_xml(INFOTRIBUTARIA)[0]
+"""
 infoFactura_ = metaprocess_xml(INFOFACTURA)[0]
 detalles_ = E.detalles(*metaprocess_xml(DETALLE))
 retenciones_ = E.retenciones(*metaprocess_xml(RETENCIONES))
 infoAdicional_ = E.infoAdicional(*INFOAD)
 
-
+"""
 evoucher = E.factura(
         infoTributaria_,
+)
+"""
         infoFactura_,
         detalles_,
         retenciones_,
         infoAdicional_,
 )
-
-print lxml.etree.tostring(evoucher, pretty_print=True)
 """
+print lxml.etree.tostring(evoucher, pretty_print=True)
+

@@ -1,11 +1,13 @@
 <?xml version="1.0"?>
 <data>
     <xpath expr="/form/notebook/page[@id='reports']" position="after">
-        <page string="Sri WS" id="sri" col="1">
-            <separator string="Certificado SRI WS" id='certificate'/>
-            <field name="sri_certificate"/>
-            <separator string="Clave Privada SRI WS" id='pass'/>
-            <field name="sri_private_key"/>
+        <page string="GTA WS" id="gta" col="4">
+            <label name="default_enviroment_type"/>
+            <field name="default_enviroment_type"/>
+            <separator string="Certificado GTA WS" id='certificate' colspan="4"/>
+            <field name="gta_certificate" colspan="4"/>
+            <separator string="Clave Privada GTA WS" id='pass' colspan="4"/>
+            <field name="gta_private_key" colspan="4"/>
         </page>
     </xpath>
 </data>

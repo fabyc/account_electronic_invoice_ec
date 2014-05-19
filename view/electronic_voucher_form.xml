@@ -12,12 +12,14 @@ this repository contains the full copyright notices and license terms. -->
     <field name="enviroment_type"/>
     <label name="evoucher_type"/>
     <field name="evoucher_type"/>
-    <label name="check_digit"/>
-    <field name="check_digit"/>
+    <label name="verification_digit"/>
+    <field name="verification_digit"/>
     <label name="signature_token"/>
     <field name="signature_token"/>
+    <label name="pyws_cae"/>
+    <field name="pyws_cae"/>
+    <separator name="raw_xml" colspan="4"/>
+    <field name="raw_xml" colspan="4"/>
     <label name="state"/>
     <field name="state"/>
-    <label name="pyws_concept"/>
-    <field name="pyws_concept"/>
 </form>

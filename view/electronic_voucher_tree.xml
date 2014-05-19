@@ -7,8 +7,7 @@ this repository contains the full copyright notices and license terms. -->
     <field name="serie"/>
     <field name="enviroment_type"/>
     <field name="evoucher_type"/>
-    <field name="check_digit"/>
+    <field name="verification_digit"/>
     <field name="signature_token"/>
     <field name="state"/>
-    <field name="pyws_concept"/>
 </tree>

@@ -4,15 +4,23 @@ from trytond.model import ModelView, ModelSQL, fields
 
 __all__ = ['Pos', 'PosSequence']
 
+EVOUCHER_TYPE = {
+        'out_invoice': 'Out Invoice',
+        'out_credit_note': 'Credit Note',
+        'out_debit_note': 'Debit Note',
+        'reference_guide': 'Reference Guide',
+        'withholding': 'Withholding',
+}
+
 
 class Pos(ModelSQL, ModelView):
     'Point of Sale'
     __name__ = 'account.pos'
     name = fields.Char('Name', required=True)
-    number = fields.Integer('Point of Sale SRI', required=True,
-        help="Sequence of Point of Sale location for SRI")
-    pos_sequences = fields.One2Many('account.pos.sequence', 'pos',
-        'Point of Sale')
+    number = fields.Integer('Point of Sale GTA', required=True,
+        help="Sequence of Point of Sale location for GTA")
+    pos_sequence = fields.Many2One('account.pos.sequence', 
+        'Point of Sale Sequence', select=True)
     pos_type = fields.Selection([
             ('manual', 'Manual'),
             ('electronic', 'Electronic'),
@@ -22,6 +30,10 @@ class Pos(ModelSQL, ModelView):
     @classmethod
     def __setup__(cls):
         super(Pos, cls).__setup__()
+        cls._sql_constraints += [
+            ('pos_sequence', 'UNIQUE(pos_sequence)',
+                'Pos Sequence is already used by another POS!'),
+        ]
 
     """
     pysriws_electronic_invoice_service = fields.Selection([
@@ -54,14 +66,10 @@ class Pos(ModelSQL, ModelView):
 class PosSequence(ModelSQL, ModelView):
     'Point of Sale Sequences'
     __name__ = 'account.pos.sequence'
+    _rec_name = 'invoice_type'
     pos = fields.Many2One('account.pos', 'Point of Sale')
-    invoice_type = fields.Selection([
-            ('', ''),
-            ('1', 'Invoice A'),
-            ('2', 'Debit Note A'),
-            ('3', 'Credit Note A'),
-            ('3', 'Delivery Form A'),
-            ], 'SRI Voucher Type', required=True)
+    invoice_type = fields.Selection(EVOUCHER_TYPE.items(),
+        'Invoice Type', required=True)
     invoice_sequence = fields.Property(fields.Many2One('ir.sequence',
             'Sequence', required=True,
             domain=[('code', '=', 'account.invoice')],
