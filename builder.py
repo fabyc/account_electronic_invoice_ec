@@ -141,23 +141,24 @@ INFOAD = [
 
 #-----------------------------------------------------------------------
 
-infoTributaria_ = metaprocess_xml(INFOTRIBUTARIA)[0]
 """
+infoTributaria_ = metaprocess_xml(INFOTRIBUTARIA)[0]
+
 infoFactura_ = metaprocess_xml(INFOFACTURA)[0]
 detalles_ = E.detalles(*metaprocess_xml(DETALLE))
 retenciones_ = E.retenciones(*metaprocess_xml(RETENCIONES))
 infoAdicional_ = E.infoAdicional(*INFOAD)
 
-"""
+
 evoucher = E.factura(
         infoTributaria_,
 )
-"""
+
         infoFactura_,
         detalles_,
         retenciones_,
         infoAdicional_,
 )
-"""
-print lxml.etree.tostring(evoucher, pretty_print=True)
 
+print lxml.etree.tostring(evoucher, pretty_print=True)
+"""

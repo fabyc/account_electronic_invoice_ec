@@ -42,17 +42,17 @@ class ElectronicVoucher(ModelSQL, ModelView):
     'Electronic Voucher'
     __name__ = 'account.electronic_voucher'
     _order_name = 'number'
-    number = fields.Char('Reference', help='Sequence Document', size=9)
+    number = fields.Char('Number', help='Sequence Document', size=9)
     release_date = fields.Date('Release Date', required=True,
         select=True)
-    serie = fields.Integer('Serial GTA', required=False, select=True)
+    serie = fields.Integer('Serie GTA', required=False, select=True)
     enviroment_type = fields.Selection(ENVIROMENT_TYPE,
         'Enviroment Type', required=False)
     broadcast_type = fields.Selection(BROADCAST_TYPE_SRI, 'Broadcast Type', 
         required=False)
     evoucher_type = fields.Selection(EVOUCHER_TYPE.items(),
         'E-Voucher Type', required=True)
-    verification_digit = fields.Integer('Check Digit', select=True)
+    verification_digit = fields.Integer('Verification Digit', select=True)
     signature_token = fields.Char('Sign Token')
     raw_xml = fields.Text('Xml File')
     invoice = fields.Many2One('account.invoice', 'Invoice',
@@ -94,6 +94,214 @@ class ElectronicVoucher(ModelSQL, ModelView):
                         }])
         cls.write(*to_write)
         """
+
+    @classmethod
+    def _get_serie(cls):
+        return '001001'
+
+    @classmethod
+    def _get_number(cls, invoice):
+        Sequence = Pool().get('ir.sequence')
+        seq = Sequence.get_id(invoice.pos.pos_sequence.invoice_sequence.id)
+        print seq
+        return seq
+
+    @classmethod
+    def _get_verification_digit(cls, code):
+        "Compute the verification digit 'Modulo 11'"
+        # Step 1: sum all digits in odd positions, left to right
+        code = code.strip()
+        if not code or not code.isdigit():
+            return ''
+        step1 = sum([int(c) for i, c in enumerate(code) if not i % 2])
+        # Step 2: multiply the step 1 sum by 3
+        step2 = step1 * 3
+        # Step 3: start from the left, sum all the digits in even positions
+        step3 = sum([int(c) for i, c in enumerate(code) if i % 2])
+        # Step 4: sum the results of step 2 and 3
+        step4 = step2 + step3
+        # Step 5: the minimun value that summed to step 4 is a multiple of 10
+        digit = 11 - (step4 - (int(step4 / 11) * 11))
+        if digit == 11:
+            digit = 0
+        return str(digit)
+
+    @classmethod
+    def create_electronic_voucher(cls, invoice):
+        pool = Pool()
+        Company = pool.get('company.company')
+        if Transaction().context.get('company'):
+            company = Company(Transaction().context['company'])
+            enviroment_type = company.default_enviroment_type
+        else:
+            enviroment_type = 1
+
+        serie = cls._get_serie()
+        number = cls._get_number(invoice)
+        verification_digit = cls._get_verification_digit('41261533')
+
+        # TODO: FIXME
+        if invoice.state == 'draft':
+            broadcast_type = '1'
+        else:
+            broadcast_type = '2'
+
+        values = {
+            'number': number,
+            'release_date': invoice.invoice_date,
+            'serie': serie,
+            'enviroment_type': enviroment_type,
+            'broadcast_type': broadcast_type,
+            'evoucher_type': invoice.type,
+            'verification_digit': verification_digit,
+            'state': 'draft',
+            'invoice': invoice.id,
+        }
+        vouchers = cls.create([values])
+        for voucher in vouchers:
+            val = {'raw_xml': voucher.create_xml(invoice)}
+            voucher.write([voucher], val)
+
+    def get_password(self):
+        if self.invoice.company.gta_private_key:
+            return self.invoice.company.gta_private_key
+        return '00000000000'
+    
+    def create_xml(self, invoice):
+        E = lxml.builder.ElementMaker()
+        #------------ INFOTRIBUTARIA ------------
+        street = ''
+        if invoice.company.party.addresses[0].street:
+            street = invoice.company.party.addresses[0].street
+        password = self.get_password()
+        INFOTRIBUTARIA = {
+            'infoTributaria': [
+                    [
+                    ('ambiente', self.enviroment_type),
+                    ('tipoEmision', self.broadcast_type),
+                    ('razonSocial', self.invoice.company.party.name),
+                    ('nombreComercial', self.invoice.company.party.commercial_name),
+                    ('ruc',  self.invoice.company.party.vat_number),
+                    ('claveAcceso', password),
+                        ('codDoc', self.evoucher_type),
+                    ('estab', self.invoice.pos.code),
+                    ('ptoEmi', self.invoice.pos.code),
+                    ('secuencial', self.number),
+                    ('dirMatriz', street),
+                    ],]
+        }
+        print INFOTRIBUTARIA
+
+        #------------ INFOFACTURA ------------
+        TOTAL_TAXES = {'totalImpuesto': [[
+                    ('codigo', '2'),
+                    ('codigoPorcentaje', '6'),
+                    ('baseImponible', '0.00'),
+                    ('valor', '0.00'),
+                ], [
+                    ('codigo', '3'),
+                    ('codigoPorcentaje', '8'),
+                    ('baseImponible', '10.00'),
+                    ('valor', '10.00'),
+                ], [
+                    ('codigo', '4'),
+                    ('codigoPorcentaje', '11'),
+                    ('baseImponible', '20.00'),
+                    ('valor', '77.00'),
+                ]]
+        }
+
+        INFOFACTURA = {
+            'infoFactura': [[
+                    ('fechaEmision', str(self.invoice.invoice_date)),
+                    ('dirEstablecimiento', street),
+                    ('contribuyenteEspecial', '12345'),
+                    ('obligadoContabilidad', self.invoice.party.mandatory_accounting),
+                    ('tipoIdentificacionComprador', self.invoice.party.type_document),
+                    ('razonSocialComprador', self.invoice.party.name),
+                    ('identificacionComprador', self.invoice.party.vat_number),
+                    ('totalSinImpuestos', '0.00'),
+                    ('totalDescuento','0.00'),
+                    ('totalConImpuestos', TOTAL_TAXES),
+                    ('propina','0.00'),
+                    ('moneda', 'DOLAR'),
+                ],]
+        }
+        """
+        #------------ DETALLES ------------
+
+        TAXES1 = {'impuesto': [[
+                    ('codigo', '2'),
+                    ('codigoPorcentaje', '6'),
+                    ('tarifa', '6'),
+                    ('baseImponible', '0.00'),
+                    ('valor', '0.00'),
+                ], [
+                    ('codigo', '3'),
+                    ('codigoPorcentaje', '8'),
+                    ('tarifa', '6'),
+                    ('baseImponible', '10.00'),
+                    ('valor', '10.00'),
+                ],]
+        }
+
+        DETALLE = {'detalle': [[
+                ('codigoPrincipal', '011'),
+                ('descripcion', 'JABON FAB'),
+                ('cantidad', '0.0000'),
+                ('precioUnitario', '0.00'),
+                ('descuento', '0.00'),
+                ('precioTotalSinImpuesto', '0.00'),
+                ('impuestos', TAXES1),
+                ], [
+                ('codigoPrincipal', '011'),
+                ('descripcion', 'COCACOLA'),
+                ('cantidad', '3.0000'),
+                ('precioUnitario', '1320.00'),
+                ('descuento', '0.00'),
+                ('precioTotalSinImpuesto', '0.00'),
+                ('impuestos', TAXES1),
+                ], ]
+        }
+
+        #------------ RETENCIONES ------------
+        RETENCIONES = {'retencion': [[
+                    ('codigo', '8'),
+                    ('codigoPorcentaje', '316'),
+                    ('tarifa', '6'),
+                    ('valor', '0.00'),
+                ], [
+                    ('codigo', '9'),
+                    ('codigoPorcentaje', '321'),
+                    ('tarifa', '0.00'),
+                    ('valor', '10.00'),
+                ],]
+        }
+        """
+        #------------ INFOADICIONAL ------------
+        INFOAD = []
+        if self.invoice.party.addresses[0].street:
+            INFOAD.append(E.campoAdicional(
+                self.invoice.party.addresses[0].street,
+                nombre='Direccion',
+                ))
+        if self.invoice.party.email:
+            INFOAD.append(E.campoAdicional(
+                    self.invoice.party.email,
+                    nombre='Email',
+                    ))
+
+        infoTributaria_ = metaprocess_xml(INFOTRIBUTARIA)[0]
+        infoFactura_ = metaprocess_xml(INFOFACTURA)[0]
+        infoAdicional_ = E.infoAdicional(*INFOAD)
+        evoucher = E.factura(
+                infoTributaria_,
+                infoFactura_,
+                infoAdicional_,
+        )
+
+        data = lxml.etree.tostring(evoucher, pretty_print=True)
+        return data
 
     def do_request_ws(self):
         logger = logging.getLogger('py_ws')
@@ -412,172 +620,25 @@ class ElectronicVoucher(ModelSQL, ModelView):
             self.write([self], vals)
         """
 
-    def get_verification_digit(self, code):
-        "Calculate the verification digit 'Modulo 11'"
-        # Step 1: sum all digits in odd positions, left to right
-        code = code.strip()
-        if not code or not code.isdigit():
-            return ''
-        etapa1 = sum([int(c) for i,c in enumerate(code) if not i%2])
-        # Step 2: multiply the step 1 sum by 3
-        etapa2 = etapa1 * 3
-        # Step 3: start from the left, sum all the digits in even positions
-        etapa3 = sum([int(c) for i,c in enumerate(code) if i%2])
-        # Step 4: sum the results of step 2 and 3
-        etapa4 = etapa2 + etapa3
-        # Step 5: the minimun value that summed to step 4 is a multiple of 10
-        digit = 10 - (etapa4 - (int(etapa4 / 10) * 10))
-        if digit == 10:
-            digit = 0
-        return str(digit)
+class WsTransaction(ModelSQL, ModelView):
+    'SRI Ws Transaction'
+    __name__ = 'account.sri_transaction'
+    pysriws_result = fields.Selection([
+           ('', 'N.A.'),
+           ('G', 'Generado'),
+           ('F', 'Firmado'),
+           ('A', 'Autorizado'),
+           ('N', 'No Autorizado'),
+       ], 'Result', readonly=True,
+       help="Result of processing request return by GTA")
+    pysriws_message = fields.Text('Message', readonly=True,
+       help="Message returned by GTA")
+    pysriws_xml_request = fields.Text('Requerimiento XML', readonly=True,
+       help="Message XML send by GTA (debugger)")
+    pysriws_xml_response = fields.Text('Response XML', readonly=True,
+       help="Message XML received de GTA (debugger)")
+    invoice = fields.Many2One('account.electronic_voucher', 'Electronic Voucher')
 
-    @classmethod
-    def create_electronic_voucher(cls, invoice):
-        pool = Pool()
-        Company = pool.get('company.company')
-        if Transaction().context.get('company'):
-            company = Company(Transaction().context['company'])
-            enviroment_type = company.default_enviroment_type
-        else:
-            enviroment_type = 1
-
-        values = {
-            'number': invoice.number,
-            'release_date': invoice.invoice_date,
-            'serie': '000000',
-            'enviroment_type': enviroment_type,
-            'broadcast_type': '1',
-            'evoucher_type': invoice.type,
-            'verification_digit': '555',
-            'state': 'draft',
-            'invoice': invoice.id,
-        }
-        vouchers = cls.create([values])
-        for voucher in vouchers:
-            val = {'raw_xml': voucher.create_xml(invoice)}
-            voucher.write([voucher], val)
-
-    def create_xml(self, invoice):
-        E = lxml.builder.ElementMaker()
-        #------------ INFOTRIBUTARIA ------------
-        INFOTRIBUTARIA = {
-            'infoTributaria': [
-                    [
-                    ('ambiente', self.enviroment_type),
-                    ('tipoEmision', self.broadcast_type),
-                    ('razonSocial', self.invoice.company.party.name),
-                    ('nombreComercial', self.invoice.company.party.commercial_name),
-                    ('ruc',  self.invoice.company.party.vat_number),
-                    ('claveAcceso', self.invoice.company.gta_private_key or 'ABC'),
-                    ('codDoc', self.evoucher_type),
-                    ('estab', '01'),
-                    ('ptoEmi', '00'),
-                    ('secuencial', self.number or '00000'),
-                    ('dirMatriz', invoice.company.party.addresses[0].street),
-                    ],]
-        }
-        print INFOTRIBUTARIA
-        """
-        #------------ INFOFACTURA ------------
-        TOTAL_TAXES = {'totalImpuesto': [[
-                    ('codigo', '2'),
-                    ('codigoPorcentaje', '6'),
-                    ('baseImponible', '0.00'),
-                    ('valor', '0.00'),
-                ], [
-                    ('codigo', '3'),
-                    ('codigoPorcentaje', '8'),
-                    ('baseImponible', '10.00'),
-                    ('valor', '10.00'),
-                ], [
-                    ('codigo', '4'),
-                    ('codigoPorcentaje', '11'),
-                    ('baseImponible', '20.00'),
-                    ('valor', '77.00'),
-                ]]
-        }
-
-        INFOFACTURA = {
-            'infoFactura': [[
-                    ('fechaEmision', '21/03/2013'),
-                    ('dirEstablecimiento', 'CLL 31 N 45-81'),
-                    ('contribuyenteEspecial', '12345'),
-                    ('obligadoContabilidad', 'SI'),
-                    ('tipoIdentificacionComprador', '04'),
-                    ('razonSocialComprador', 'SRI PRUEBAS'),
-                    ('identificacionComprador', '9078612345'),
-                    ('totalSinImpuestos', '0.00'),
-                    ('totalDescuento','0.00'),
-                    ('totalConImpuestos', TOTAL_TAXES),
-                    ('propina','0.00'),
-                    ('moneda', 'DOLAR'),
-                ],]
-        }
-
-        #------------ DETALLES ------------
-
-        TAXES1 = {'impuesto': [[
-                    ('codigo', '2'),
-                    ('codigoPorcentaje', '6'),
-                    ('tarifa', '6'),
-                    ('baseImponible', '0.00'),
-                    ('valor', '0.00'),
-                ], [
-                    ('codigo', '3'),
-                    ('codigoPorcentaje', '8'),
-                    ('tarifa', '6'),
-                    ('baseImponible', '10.00'),
-                    ('valor', '10.00'),
-                ],]
-        }
-
-        DETALLE = {'detalle': [[
-                ('codigoPrincipal', '011'),
-                ('descripcion', 'JABON FAB'),
-                ('cantidad', '0.0000'),
-                ('precioUnitario', '0.00'),
-                ('descuento', '0.00'),
-                ('precioTotalSinImpuesto', '0.00'),
-                ('impuestos', TAXES1),
-                ], [
-                ('codigoPrincipal', '011'),
-                ('descripcion', 'COCACOLA'),
-                ('cantidad', '3.0000'),
-                ('precioUnitario', '1320.00'),
-                ('descuento', '0.00'),
-                ('precioTotalSinImpuesto', '0.00'),
-                ('impuestos', TAXES1),
-                ], ]
-        }
-
-        #------------ RETENCIONES ------------
-        RETENCIONES = {'retencion': [[
-                    ('codigo', '8'),
-                    ('codigoPorcentaje', '316'),
-                    ('tarifa', '6'),
-                    ('valor', '0.00'),
-                ], [
-                    ('codigo', '9'),
-                    ('codigoPorcentaje', '321'),
-                    ('tarifa', '0.00'),
-                    ('valor', '10.00'),
-                ],]
-        }
-
-        #------------ INFOADICIONAL ------------
-        INFOAD = [
-                    E.campoAdicional('Lenny Kravitz Street', nombre='Direccion'),
-                    E.campoAdicional('rockstar@itunes.com', nombre='Email'),
-                ]
-        """
-        infoTributaria_ = metaprocess_xml(INFOTRIBUTARIA)[0]
-        evoucher = E.factura(
-                infoTributaria_,
-        )
-
-        data = lxml.etree.tostring(evoucher, pretty_print=True)
-        print data
-        return data
 
 
 """
@@ -606,23 +667,3 @@ class ElectronicVoucherSequence(ModelSQL, ModelView):
             type2name[type] = name
         return type2name[self.invoice_type][3:]
 """
-
-
-class WsTransaction(ModelSQL, ModelView):
-    'SRI Ws Transaction'
-    __name__ = 'account.sri_transaction'
-    pysriws_result = fields.Selection([
-           ('', 'N.A.'),
-           ('G', 'Generado'),
-           ('F', 'Firmado'),
-           ('A', 'Autorizado'),
-           ('N', 'No Autorizado'),
-       ], 'Result', readonly=True,
-       help="Result of processing request return by GTA")
-    pysriws_message = fields.Text('Message', readonly=True,
-       help="Message returned by GTA")
-    pysriws_xml_request = fields.Text('Requerimiento XML', readonly=True,
-       help="Message XML send by GTA (debugger)")
-    pysriws_xml_response = fields.Text('Response XML', readonly=True,
-       help="Message XML received de GTA (debugger)")
-    invoice = fields.Many2One('account.electronic_voucher', 'Electronic Voucher')

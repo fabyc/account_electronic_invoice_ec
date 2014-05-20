@@ -17,7 +17,7 @@ class Pos(ModelSQL, ModelView):
     'Point of Sale'
     __name__ = 'account.pos'
     name = fields.Char('Name', required=True)
-    number = fields.Integer('Point of Sale GTA', required=True,
+    code = fields.Char('Point of Sale GTA', required=False,
         help="Sequence of Point of Sale location for GTA")
     pos_sequence = fields.Many2One('account.pos.sequence', 
         'Point of Sale Sequence', select=True)

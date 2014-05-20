@@ -10,6 +10,8 @@ this repository contains the full copyright notices and license terms. -->
     <field name="serie"/>
     <label name="enviroment_type"/>
     <field name="enviroment_type"/>
+    <label name="broadcast_type"/>
+    <field name="broadcast_type"/>
     <label name="evoucher_type"/>
     <field name="evoucher_type"/>
     <label name="verification_digit"/>
