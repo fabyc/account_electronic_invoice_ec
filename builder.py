@@ -1,5 +1,6 @@
     #!/usr/bin/python
 #! -*- coding: utf8 -*-
+from decimal import Decimal
 import lxml.builder
 from functools import partial
 

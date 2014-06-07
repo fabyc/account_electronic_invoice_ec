@@ -45,7 +45,7 @@ class Invoice:
     pos = fields.Many2One('account.pos', 'Point of Sale', 
         states=_POS_STATES, depends=_DEPENDS)
     invoice_type = fields.Many2One('account.pos.sequence', 'Invoice Type',
-        domain=([('pos', '=', Eval('pos'))]), required=False,
+        required=False,
         states=_POS_STATES, depends=_DEPENDS)
     electronic_vouchers = fields.One2Many('account.electronic_voucher',
            'invoice', 'Electronic Invoice', readonly=True)
@@ -170,7 +170,15 @@ class Invoice:
 
     def _create_electronic_voucher(self):
         Evoucher = Pool().get('account.electronic_voucher')
-        evoucher = Evoucher.create_electronic_voucher(self)
+        Evoucher.create_electronic_voucher(self)
+
+    @classmethod
+    def copy(cls, invoices, default=None):
+        if default is None:
+            default = {}
+        default = default.copy()
+        default['electronic_vouchers'] = []
+        return super(Invoice, cls).copy(invoices, default=default)
 
 
 class InvoiceReport(Report):

@@ -84,6 +84,8 @@ class ElectronicVoucher(ModelSQL, ModelView):
 
     @classmethod
     def set_token(cls, value):
+        logger = logging.getLogger('token')
+        logger.info('Token send it...! ')
         if value == 'x' * 10:
             return
         #to_write = []
@@ -190,26 +192,20 @@ class ElectronicVoucher(ModelSQL, ModelView):
                     ('dirMatriz', street),
                     ],]
         }
-        print INFOTRIBUTARIA
 
         #------------ INFOFACTURA ------------
-        TOTAL_TAXES = {'totalImpuesto': [[
-                    ('codigo', '2'),
-                    ('codigoPorcentaje', '6'),
-                    ('baseImponible', '0.00'),
-                    ('valor', '0.00'),
-                ], [
-                    ('codigo', '3'),
-                    ('codigoPorcentaje', '8'),
-                    ('baseImponible', '10.00'),
-                    ('valor', '10.00'),
-                ], [
-                    ('codigo', '4'),
-                    ('codigoPorcentaje', '11'),
-                    ('baseImponible', '20.00'),
-                    ('valor', '77.00'),
-                ]]
-        }
+        TOTAL_TAXES = {}
+
+        total_taxes  = []
+        for invoice_tax in invoice.taxes:
+            total_taxes.append([
+                ('codigo', invoice_tax.tax.group.code),
+                ('codigoPorcentaje', invoice_tax.tax_code.code),
+                ('baseImponible', str(invoice_tax.base)),
+                ('valor', str(invoice_tax.amount)),
+            ])
+        
+        TOTAL_TAXES['totalImpuesto'] = total_taxes
 
         INFOFACTURA = {
             'infoFactura': [[
@@ -227,6 +223,7 @@ class ElectronicVoucher(ModelSQL, ModelView):
                     ('moneda', 'DOLAR'),
                 ],]
         }
+
         """
         #------------ DETALLES ------------
 
