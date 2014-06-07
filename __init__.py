@@ -10,8 +10,8 @@ def register():
     Pool.register(
         Address,
         Company,
-        Pos,
         PosSequence,
+        Pos,
         Invoice,
         ElectronicVoucher,
         WsTransaction,
