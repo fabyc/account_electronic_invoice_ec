@@ -67,7 +67,6 @@ class PosSequence(ModelSQL, ModelView):
     'Point of Sale Sequences'
     __name__ = 'account.pos.sequence'
     _rec_name = 'invoice_type'
-    pos = fields.Many2One('account.pos', 'Point of Sale')
     invoice_type = fields.Selection(EVOUCHER_TYPE.items(),
         'Invoice Type', required=True)
     invoice_sequence = fields.Property(fields.Many2One('ir.sequence',
