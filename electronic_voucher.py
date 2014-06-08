@@ -168,7 +168,20 @@ class ElectronicVoucher(ModelSQL, ModelView):
         if self.invoice.company.gta_private_key:
             return self.invoice.company.gta_private_key
         return '00000000000'
-    
+
+    def get_invoice_line_tax(self, line, tax):
+        pool = Pool()
+        Tax = pool.get('account.tax')
+
+        if not self.invoice:
+            return
+        context = self.invoice.get_tax_context()
+
+        with Transaction().set_context(**context):
+            taxes = Tax.compute([tax], line.unit_price, line.quantity)
+        print taxes
+        return taxes[0]['amount']
+
     def create_xml(self, invoice):
         E = lxml.builder.ElementMaker()
         #------------ INFOTRIBUTARIA ------------
@@ -224,43 +237,32 @@ class ElectronicVoucher(ModelSQL, ModelView):
                 ],]
         }
 
-        """
         #------------ DETALLES ------------
+        detalles = []
+        for line in invoice.lines:
+            line_taxes = []
+            for tax in line.taxes:
+                tax_amount = self.get_invoice_line_tax(line, tax)
+                line_taxes.append([
+                    ('codigo', tax.group.code),
+                    ('codigoPorcentaje', tax.invoice_tax_code.code),
+                    ('tarifa', str(tax.rate)),
+                    ('baseImponible', str(line.amount)),
+                    ('valor', str(tax_amount)),
+                ])
+            discount = '0.00'
+            detalles.append([
+                ('codigoPrincipal', line.product.code),
+                ('descripcion', line.product.name),
+                ('cantidad', str(line.quantity)),
+                ('precioUnitario', str(line.unit_price)),
+                ('descuento', discount),
+                ('precioTotalSinImpuesto', str(line.amount)),
+                ('impuestos', {'impuesto': line_taxes}),
+                ])
+        DETALLE = {'detalle': detalles} 
 
-        TAXES1 = {'impuesto': [[
-                    ('codigo', '2'),
-                    ('codigoPorcentaje', '6'),
-                    ('tarifa', '6'),
-                    ('baseImponible', '0.00'),
-                    ('valor', '0.00'),
-                ], [
-                    ('codigo', '3'),
-                    ('codigoPorcentaje', '8'),
-                    ('tarifa', '6'),
-                    ('baseImponible', '10.00'),
-                    ('valor', '10.00'),
-                ],]
-        }
-
-        DETALLE = {'detalle': [[
-                ('codigoPrincipal', '011'),
-                ('descripcion', 'JABON FAB'),
-                ('cantidad', '0.0000'),
-                ('precioUnitario', '0.00'),
-                ('descuento', '0.00'),
-                ('precioTotalSinImpuesto', '0.00'),
-                ('impuestos', TAXES1),
-                ], [
-                ('codigoPrincipal', '011'),
-                ('descripcion', 'COCACOLA'),
-                ('cantidad', '3.0000'),
-                ('precioUnitario', '1320.00'),
-                ('descuento', '0.00'),
-                ('precioTotalSinImpuesto', '0.00'),
-                ('impuestos', TAXES1),
-                ], ]
-        }
-
+        """
         #------------ RETENCIONES ------------
         RETENCIONES = {'retencion': [[
                     ('codigo', '8'),
@@ -275,6 +277,8 @@ class ElectronicVoucher(ModelSQL, ModelView):
                 ],]
         }
         """
+
+
         #------------ INFOADICIONAL ------------
         INFOAD = []
         if self.invoice.party.addresses[0].street:
@@ -291,12 +295,14 @@ class ElectronicVoucher(ModelSQL, ModelView):
         infoTributaria_ = metaprocess_xml(INFOTRIBUTARIA)[0]
         infoFactura_ = metaprocess_xml(INFOFACTURA)[0]
         infoAdicional_ = E.infoAdicional(*INFOAD)
+        detalles_ = E.detalles(*metaprocess_xml(DETALLE))
+
         evoucher = E.factura(
                 infoTributaria_,
                 infoFactura_,
+                detalles_,
                 infoAdicional_,
         )
-
         data = lxml.etree.tostring(evoucher, pretty_print=True)
         return data
 
