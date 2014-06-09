@@ -37,6 +37,11 @@ BROADCAST_TYPE_SRI = [
         ('2', 'Unavailable system'),
 ]
 
+GTA_CODE_TAX = {
+        'IVA': '2',
+        'ICE': '3',
+        'RETENCION': '4',
+}
 
 class ElectronicVoucher(ModelSQL, ModelView):
     'Electronic Voucher'
@@ -179,8 +184,10 @@ class ElectronicVoucher(ModelSQL, ModelView):
 
         with Transaction().set_context(**context):
             taxes = Tax.compute([tax], line.unit_price, line.quantity)
-        print taxes
-        return taxes[0]['amount']
+        if taxes:
+            return taxes[0]['amount']
+        else:
+            return '0.00'
 
     def create_xml(self, invoice):
         E = lxml.builder.ElementMaker()
@@ -210,14 +217,26 @@ class ElectronicVoucher(ModelSQL, ModelView):
         TOTAL_TAXES = {}
 
         total_taxes  = []
+        total_withholdings  = []
+
         for invoice_tax in invoice.taxes:
-            total_taxes.append([
-                ('codigo', invoice_tax.tax.group.code),
-                ('codigoPorcentaje', invoice_tax.tax_code.code),
-                ('baseImponible', str(invoice_tax.base)),
-                ('valor', str(invoice_tax.amount)),
-            ])
-        
+            if invoice_tax.tax.group.code == GTA_CODE_TAX['IVA']:
+                total_taxes.append([
+                    ('codigo', invoice_tax.tax.group.code),
+                    ('codigoPorcentaje', invoice_tax.tax_code.code),
+                    ('baseImponible', str(invoice_tax.base)),
+                    ('valor', str(invoice_tax.amount)),
+                ])
+            elif invoice_tax.tax.group.code == GTA_CODE_TAX['ICE']:
+                pass
+            elif invoice_tax.tax.group.code == GTA_CODE_TAX['RETENCION']:
+                total_withholdings.append([
+                    ('codigo', invoice_tax.tax.group.code),
+                    ('codigoPorcentaje', invoice_tax.tax_code.code),
+                    ('tarifa', str(invoice_tax.tax.rate * 100)),
+                    ('valor', str(invoice_tax.amount)),
+                ])
+
         TOTAL_TAXES['totalImpuesto'] = total_taxes
 
         INFOFACTURA = {
@@ -246,7 +265,7 @@ class ElectronicVoucher(ModelSQL, ModelView):
                 line_taxes.append([
                     ('codigo', tax.group.code),
                     ('codigoPorcentaje', tax.invoice_tax_code.code),
-                    ('tarifa', str(tax.rate)),
+                    ('tarifa', str(tax.rate*100)),
                     ('baseImponible', str(line.amount)),
                     ('valor', str(tax_amount)),
                 ])
@@ -262,21 +281,8 @@ class ElectronicVoucher(ModelSQL, ModelView):
                 ])
         DETALLE = {'detalle': detalles} 
 
-        """
         #------------ RETENCIONES ------------
-        RETENCIONES = {'retencion': [[
-                    ('codigo', '8'),
-                    ('codigoPorcentaje', '316'),
-                    ('tarifa', '6'),
-                    ('valor', '0.00'),
-                ], [
-                    ('codigo', '9'),
-                    ('codigoPorcentaje', '321'),
-                    ('tarifa', '0.00'),
-                    ('valor', '10.00'),
-                ],]
-        }
-        """
+        RETENCIONES = {'retencion': total_withholdings}
 
 
         #------------ INFOADICIONAL ------------
@@ -296,11 +302,13 @@ class ElectronicVoucher(ModelSQL, ModelView):
         infoFactura_ = metaprocess_xml(INFOFACTURA)[0]
         infoAdicional_ = E.infoAdicional(*INFOAD)
         detalles_ = E.detalles(*metaprocess_xml(DETALLE))
+        retenciones_ = E.retenciones(*metaprocess_xml(RETENCIONES))
 
         evoucher = E.factura(
                 infoTributaria_,
                 infoFactura_,
                 detalles_,
+                retenciones_,
                 infoAdicional_,
         )
         data = lxml.etree.tostring(evoucher, pretty_print=True)
