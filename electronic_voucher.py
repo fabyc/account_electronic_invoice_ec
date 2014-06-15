@@ -2,10 +2,12 @@
 import logging
 import lxml
 from trytond.model import ModelView, ModelSQL, fields
-from builder import metaprocess_xml
 from trytond.pyson import Eval
 from trytond.pool import Pool
 from trytond.transaction import Transaction
+import lxml.builder
+from functools import partial
+#from builder import metaprocess_xml
 
 try:
     import bcrypt
@@ -42,6 +44,9 @@ GTA_CODE_TAX = {
         'ICE': '3',
         'RETENCION': '4',
 }
+
+def fmt(num):
+    return str(round(num, 2))
 
 class ElectronicVoucher(ModelSQL, ModelView):
     'Electronic Voucher'
@@ -82,6 +87,12 @@ class ElectronicVoucher(ModelSQL, ModelView):
     @classmethod
     def __setup__(cls):
         super(ElectronicVoucher, cls).__setup__()
+        cls._error_messages.update({
+                'missing_tax_group': ('Missing tax group or tax group '
+                    'code for tax %s.'),
+                'missing_tax_code': ('Missing tax code for '
+                    'tax %s.'),
+                })
 
     @staticmethod
     def default_enviroment_type():
@@ -189,6 +200,28 @@ class ElectronicVoucher(ModelSQL, ModelView):
         else:
             return '0.00'
 
+    def metaprocess_xml(self, data):
+        E = lxml.builder.ElementMaker()
+        """
+        Parameters
+        data :: dict where key is an element and value is a list of elements list
+        return :: create
+        """
+        #field = E.field('azul', name='color')
+        #field = partial(E, 'field')('azul', name='color')
+        res = []
+        for parent, lvalues in data.iteritems():
+            for values in lvalues:
+                args = []
+                for v1, v2 in values:
+                    if isinstance(v2, dict):
+                        subargs = self.metaprocess_xml(v2)
+                        args.append(partial(E, v1)(*subargs))
+                    else:
+                        args.append(partial(E, v1)(v2))
+                res.append(partial(E, parent)(*args))
+        return res
+
     def create_xml(self, invoice):
         E = lxml.builder.ElementMaker()
         #------------ INFOTRIBUTARIA ------------
@@ -220,22 +253,28 @@ class ElectronicVoucher(ModelSQL, ModelView):
         total_withholdings  = []
 
         for invoice_tax in invoice.taxes:
+
+            if not invoice_tax.tax.group or not invoice_tax.tax.group.code:
+                self.raise_user_error('missing_tax_group', invoice_tax.tax.name)
+            if not invoice_tax.tax_code or not invoice_tax.tax_code.code:
+                self.raise_user_error('missing_tax_code', invoice_tax.tax.name)
+
             if invoice_tax.tax.group.code == GTA_CODE_TAX['IVA']:
                 total_taxes.append([
                     ('codigo', invoice_tax.tax.group.code),
                     ('codigoPorcentaje', invoice_tax.tax_code.code),
-                    ('baseImponible', str(invoice_tax.base)),
-                    ('valor', str(invoice_tax.amount)),
+                    ('baseImponible', fmt(invoice_tax.base)),
+                    ('valor', fmt(invoice_tax.amount)),
                 ])
-            elif invoice_tax.tax.group.code == GTA_CODE_TAX['ICE']:
-                pass
             elif invoice_tax.tax.group.code == GTA_CODE_TAX['RETENCION']:
                 total_withholdings.append([
                     ('codigo', invoice_tax.tax.group.code),
                     ('codigoPorcentaje', invoice_tax.tax_code.code),
-                    ('tarifa', str(invoice_tax.tax.rate * 100)),
-                    ('valor', str(invoice_tax.amount)),
+                    ('tarifa', fmt(invoice_tax.tax.rate * 100)),
+                    ('valor', fmt(invoice_tax.amount)),
                 ])
+            elif invoice_tax.tax.group.code == GTA_CODE_TAX['ICE']:
+                pass
 
         TOTAL_TAXES['totalImpuesto'] = total_taxes
 
@@ -248,8 +287,8 @@ class ElectronicVoucher(ModelSQL, ModelView):
                     ('tipoIdentificacionComprador', self.invoice.party.type_document),
                     ('razonSocialComprador', self.invoice.party.name),
                     ('identificacionComprador', self.invoice.party.vat_number),
-                    ('totalSinImpuestos', '0.00'),
-                    ('totalDescuento','0.00'),
+                    ('totalSinImpuestos', fmt(invoice.untaxed_amount)),
+                    ('totalDescuento', '0.00'),
                     ('totalConImpuestos', TOTAL_TAXES),
                     ('propina','0.00'),
                     ('moneda', 'DOLAR'),
@@ -261,25 +300,27 @@ class ElectronicVoucher(ModelSQL, ModelView):
         for line in invoice.lines:
             line_taxes = []
             for tax in line.taxes:
+                if not tax.group.code == GTA_CODE_TAX['IVA']:
+                    continue
                 tax_amount = self.get_invoice_line_tax(line, tax)
                 line_taxes.append([
                     ('codigo', tax.group.code),
                     ('codigoPorcentaje', tax.invoice_tax_code.code),
-                    ('tarifa', str(tax.rate*100)),
-                    ('baseImponible', str(line.amount)),
-                    ('valor', str(tax_amount)),
+                    ('tarifa', fmt(tax.rate*100)),
+                    ('baseImponible', fmt(line.amount)),
+                    ('valor', fmt(tax_amount)),
                 ])
             discount = '0.00'
             detalles.append([
                 ('codigoPrincipal', line.product.code),
                 ('descripcion', line.product.name),
-                ('cantidad', str(line.quantity)),
+                ('cantidad', fmt(line.quantity)),
                 ('precioUnitario', str(line.unit_price)),
                 ('descuento', discount),
-                ('precioTotalSinImpuesto', str(line.amount)),
+                ('precioTotalSinImpuesto', fmt(line.amount)),
                 ('impuestos', {'impuesto': line_taxes}),
                 ])
-        DETALLE = {'detalle': detalles} 
+        DETALLE = {'detalle': detalles}
 
         #------------ RETENCIONES ------------
         RETENCIONES = {'retencion': total_withholdings}
@@ -298,11 +339,11 @@ class ElectronicVoucher(ModelSQL, ModelView):
                     nombre='Email',
                     ))
 
-        infoTributaria_ = metaprocess_xml(INFOTRIBUTARIA)[0]
-        infoFactura_ = metaprocess_xml(INFOFACTURA)[0]
+        infoTributaria_ = self.metaprocess_xml(INFOTRIBUTARIA)[0]
+        infoFactura_ = self.metaprocess_xml(INFOFACTURA)[0]
         infoAdicional_ = E.infoAdicional(*INFOAD)
-        detalles_ = E.detalles(*metaprocess_xml(DETALLE))
-        retenciones_ = E.retenciones(*metaprocess_xml(RETENCIONES))
+        detalles_ = E.detalles(*self.metaprocess_xml(DETALLE))
+        retenciones_ = E.retenciones(*self.metaprocess_xml(RETENCIONES))
 
         evoucher = E.factura(
                 infoTributaria_,

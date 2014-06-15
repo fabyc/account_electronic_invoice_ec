@@ -19,6 +19,7 @@ def metaprocess_xml(data):
         for values in lvalues:
             args = []
             for v1, v2 in values:
+                print v1, v2
                 if isinstance(v2, dict):
                     subargs = metaprocess_xml(v2)
                     args.append(partial(E, v1)(*subargs))

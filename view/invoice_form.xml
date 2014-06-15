@@ -8,6 +8,8 @@ this repository contains the full copyright notices and license terms. -->
             <field name="pos"/>
             <label name="invoice_type"/>
             <field name="invoice_type" widget="selection"/>
+            <label name="send_sms"/>
+            <field name="send_sms"/>
             <field name="electronic_vouchers" colspan="4"
                 view_ids="account_electronic_invoice_ec.electronic_voucher_view_tree"/>
         </page>
