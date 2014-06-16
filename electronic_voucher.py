@@ -53,6 +53,7 @@ class ElectronicVoucher(ModelSQL, ModelView):
     __name__ = 'account.electronic_voucher'
     _order_name = 'number'
     number = fields.Char('Number', help='Sequence Document', size=9)
+    code = fields.Char('Code', size=8)
     release_date = fields.Date('Release Date', required=True,
         select=True)
     serie = fields.Integer('Serie GTA', required=False, select=True)
@@ -98,6 +99,10 @@ class ElectronicVoucher(ModelSQL, ModelView):
     def default_enviroment_type():
         return 1
 
+    @staticmethod
+    def default_code():
+        return '12345678'
+
     @classmethod
     def set_token(cls, value):
         logger = logging.getLogger('token')
@@ -125,24 +130,28 @@ class ElectronicVoucher(ModelSQL, ModelView):
         return seq
 
     @classmethod
-    def _get_verification_digit(cls, code):
-        "Compute the verification digit 'Modulo 11'"
-        # Step 1: sum all digits in odd positions, left to right
-        code = code.strip()
-        if not code or not code.isdigit():
-            return ''
-        step1 = sum([int(c) for i, c in enumerate(code) if not i % 2])
-        # Step 2: multiply the step 1 sum by 3
-        step2 = step1 * 3
-        # Step 3: start from the left, sum all the digits in even positions
-        step3 = sum([int(c) for i, c in enumerate(code) if i % 2])
-        # Step 4: sum the results of step 2 and 3
-        step4 = step2 + step3
-        # Step 5: the minimun value that summed to step 4 is a multiple of 10
-        digit = 11 - (step4 - (int(step4 / 11) * 11))
-        if digit == 11:
-            digit = 0
-        return str(digit)
+    def _get_verification_digit(cls, number):
+        "Compute the verification digit - Modulus 11"
+        factor = 2
+        x = 0
+        for n in reversed(number):
+            x += int(n) * factor
+            factor += 1
+            if factor == 8:
+                factor = 2
+        return (11 - (x % 11))
+
+    def _get_data_verification_digit(self):
+        evoucher_type = EVOUCHER_TYPE[self.evoucher_type]
+        data = self.release_date.strftime('%d%m%Y') + \
+                evoucher_type + \
+                self.invoice.company.vat_number + \
+                self.enviroment_type + \
+                self.serie + \
+                self.number + \
+                self.code + \
+                self.broadcast_type
+        return '41261533'
 
     @classmethod
     def create_electronic_voucher(cls, invoice):

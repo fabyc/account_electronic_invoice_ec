@@ -182,7 +182,7 @@ class Invoice:
         return super(Invoice, cls).copy(invoices, default=default)
 
     @staticmethod
-    def send_sms():
+    def default_send_sms():
         return True
 
 
