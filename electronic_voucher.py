@@ -129,18 +129,6 @@ class ElectronicVoucher(ModelSQL, ModelView):
         print seq
         return seq
 
-    @classmethod
-    def _get_verification_digit(cls, number):
-        "Compute the verification digit - Modulus 11"
-        factor = 2
-        x = 0
-        for n in reversed(number):
-            x += int(n) * factor
-            factor += 1
-            if factor == 8:
-                factor = 2
-        return (11 - (x % 11))
-
     def _get_data_verification_digit(self):
         evoucher_type = EVOUCHER_TYPE[self.evoucher_type]
         data = self.release_date.strftime('%d%m%Y') + \
@@ -157,6 +145,7 @@ class ElectronicVoucher(ModelSQL, ModelView):
     def create_electronic_voucher(cls, invoice):
         pool = Pool()
         Company = pool.get('company.company')
+        Party = pool.get('party.party')
         if Transaction().context.get('company'):
             company = Company(Transaction().context['company'])
             enviroment_type = company.default_enviroment_type
@@ -165,7 +154,7 @@ class ElectronicVoucher(ModelSQL, ModelView):
 
         serie = cls._get_serie()
         number = cls._get_number(invoice)
-        verification_digit = cls._get_verification_digit('41261533')
+        verification_digit = Party.compute_check_digit('41261533')
 
         # TODO: FIXME
         if invoice.state == 'draft':
