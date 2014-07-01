@@ -13,14 +13,14 @@
         </record>
 
         <record model="ir.ui.view" id="transaction_view_tree">
-            <field name="model">account_invoice_ec.sri_transaction</field>
+            <field name="model">account_invoice_ec.gta_transaction</field>
             <field name="type">tree</field>
-            <field name="name">sri_transaction_tree</field>
+            <field name="name">gta_transaction_tree</field>
         </record>
         <record model="ir.ui.view" id="transaction_view_form">
-            <field name="model">account_invoice_ec.sri_transaction</field>
+            <field name="model">account_invoice_ec.gta_transaction</field>
             <field name="type">form</field>
-            <field name="name">sri_transaction_form</field>
+            <field name="name">gta_transaction_form</field>
         </record>
     </data>
 </tryton>

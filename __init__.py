@@ -5,6 +5,7 @@ from .company import *
 from .pos import *
 from .address import *
 from .electronic_voucher import *
+from .contingency_keys import *
 
 def register():
     Pool.register(
@@ -15,6 +16,7 @@ def register():
         Invoice,
         ElectronicVoucher,
         WsTransaction,
+        ContingencyKeys,
         module='account_electronic_invoice_ec', type_='model')
     Pool.register(
         InvoiceReport,
