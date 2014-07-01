@@ -47,7 +47,7 @@ setup(name='account_electronic_invoice_ec',
     package_data={
         'trytond.modules.account_electronic_invoice_ec': (info.get('xml', []) \
                 + ['tryton.cfg', 'view/*xml', 'locale/*.po', '*.odt',
-                    'icons/*.svg']),
+                    'schemas/*.xsd']),
     },
     classifiers=[
         'Development Status :: 1 - Alpha',

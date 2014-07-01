@@ -1,13 +1,13 @@
 #! -*- coding: utf8 -*-
 import logging
-import lxml
+from StringIO import StringIO
+from lxml import etree, builder
 from trytond.model import ModelView, ModelSQL, fields
 from trytond.pyson import Eval
 from trytond.pool import Pool
 from trytond.transaction import Transaction
-import lxml.builder
 from functools import partial
-#from builder import metaprocess_xml
+
 
 try:
     import bcrypt
@@ -175,7 +175,10 @@ class ElectronicVoucher(ModelSQL, ModelView):
         }
         vouchers = cls.create([values])
         for voucher in vouchers:
-            val = {'raw_xml': voucher.create_xml(invoice)}
+            raw_data = voucher.create_xml(invoice)
+            val = {'raw_xml': raw_data}
+            response = cls.validate_schema(raw_data)
+            print "Is valid schema?: ", response
             voucher.write([voucher], val)
 
     def get_password(self):
@@ -199,7 +202,7 @@ class ElectronicVoucher(ModelSQL, ModelView):
             return '0.00'
 
     def metaprocess_xml(self, data):
-        E = lxml.builder.ElementMaker()
+        E = builder.ElementMaker()
         """
         Parameters
         data :: dict where key is an element and value is a list of elements list
@@ -221,7 +224,7 @@ class ElectronicVoucher(ModelSQL, ModelView):
         return res
 
     def create_xml(self, invoice):
-        E = lxml.builder.ElementMaker()
+        E = builder.ElementMaker()
         #------------ INFOTRIBUTARIA ------------
         street = ''
         if invoice.company.party.addresses[0].street:
@@ -350,7 +353,7 @@ class ElectronicVoucher(ModelSQL, ModelView):
                 retenciones_,
                 infoAdicional_,
         )
-        data = lxml.etree.tostring(evoucher, pretty_print=True)
+        data = etree.tostring(evoucher, pretty_print=True)
         return data
 
     def do_request_ws(self):
@@ -542,133 +545,20 @@ class ElectronicVoucher(ModelSQL, ModelView):
                 'de': 438, 'ru': 444, 'eu': 497,
                 }[self.invoice_address.country.code.lower()]
 
+    @classmethod
+    def validate_schema(cls, evoucher):
+        xsd_file = open('schemas/factura.xsd', 'r')
 
-        # create the invoice internally in the helper
-        """
-        if service == 'wsfe':
-            ws.CrearFactura(concepto, tipo_doc, nro_doc, tipo_cbte, punto_vta,
-                cbt_desde, cbt_hasta, imp_total, imp_tot_conc, imp_neto,
-                imp_iva, imp_trib, imp_op_ex, fecha_cbte, fecha_venc_pago,
-                fecha_serv_desde, fecha_serv_hasta,
-                moneda_id, moneda_ctz)
-        elif service == 'wsmtxca':
-            ws.CrearFactura(concepto, tipo_doc, nro_doc, tipo_cbte, punto_vta,
-                cbt_desde, cbt_hasta, imp_total, imp_tot_conc, imp_neto,
-                imp_subtotal, imp_trib, imp_op_ex, fecha_cbte,
-                fecha_venc_pago, fecha_serv_desde, fecha_serv_hasta,
-                moneda_id, moneda_ctz, obs_generales)
-        elif service == 'wsfex':
-            ws.CrearFactura(tipo_cbte, punto_vta, cbte_nro, fecha_cbte,
-                imp_total, tipo_expo, permiso_existente, pais_dst_cmp,
-                customer_name, cuit_customer_country, customer_address,
-                id_impositivo, moneda_id, moneda_ctz, obs_comerciales,
-                obs_generales, payment_term, incoterms,
-                idioma_cbte, incoterms_ds)
+        xsd_io = StringIO(xsd_file.read())
+        xmlschema_doc = etree.parse(xsd_io)
+        xmlschema = etree.XMLSchema(xmlschema_doc)
+        xsd_file.close()
 
-        # analyze VAT (IVA) and other taxes:
-        if service in ('wsfe', 'wsmtxca'):
-            for tax_line in self.taxes:
-                tax = tax_line.tax
-                if tax.group.name == "IVA":
-                    iva_id = IVA_GTA_CODE[tax.rate]
-                    base_imp = ("%.2f" % abs(tax_line.base))
-                    importe = ("%.2f" % abs(tax_line.amount))
-                    # add the vat detail in the helper
-                    ws.AgregarIva(iva_id, base_imp, importe)
-                else:
-                    if 'impuesto' in tax_line.tax.name.lower():
-                        tributo_id = 1  # nacional
-                    elif 'iibbb' in tax_line.tax.name.lower():
-                        tributo_id = 3  # provincial
-                    elif 'tasa' in tax_line.tax.name.lower():
-                        tributo_id = 4  # municipal
-                    else:
-                        tributo_id = 99
-                    desc = tax_line.name
-                    base_imp = ("%.2f" % abs(tax_line.base))
-                    importe = ("%.2f" % abs(tax_line.amount))
-                    alic = "%.2f" % tax_line.base
-                    # add the other tax detail in the helper
-                    ws.AgregarTributo(tributo_id, desc, base_imp, alic, importe)
+        evoucher_io = StringIO(evoucher)
+        doc = etree.parse(evoucher_io)
+        res = xmlschema.validate(doc)
+        return res
 
-        # analize line items - invoice detail
-        if service in ('wsfex', 'wsmtxca'):
-            for line in self.lines:
-                codigo = line.product.code
-                u_mtx = 1  # TODO: get it from uom?
-                cod_mtx = 'xxx' #FIXME: ean13
-                ds = line.description
-                qty = line.quantity
-                umed = 7                        # TODO: line.uos_id...?
-                precio = line.unit_price
-                importe = line.get_amount('')
-                bonif = None  # line.discount
-                for tax in line.taxes:
-                    if tax.group.name == "IVA":
-                        iva_id = IVA_GTA_CODE[tax.rate]
-                        imp_iva = importe * tax.rate
-                #if service == 'wsmtxca':
-                #    ws.AgregarItem(u_mtx, cod_mtx, codigo, ds, qty, umed,
-                #            precio, bonif, iva_id, imp_iva, importe+imp_iva)
-                if service == 'wsfex':
-                    ws.AgregarItem(codigo, ds, qty, umed, precio, importe,
-                            bonif)
-
-        # Request the authorization! (call the GTA webservice method)
-        try:
-            if service == 'wsfe':
-                ws.CAESolicitar()
-            elif service == 'wsmtxca':
-                ws.AutorizarComprobante()
-            elif service == 'wsfex':
-                ws.Authorize(self.id)
-        except SoapFault as fault:
-            msg = 'Falla SOAP %s: %s' % (fault.faultcode, fault.faultstring)
-        except Exception, e:
-            if ws.Excepcion:
-                # get the exception already parsed by the helper
-                msg = ws.Excepcion + ' ' + e
-            else:
-                # avoid encoding problem when reporting exceptions to the user:
-                import traceback
-                import sys
-                msg = traceback.format_exception_only(sys.exc_type,
-                                                      sys.exc_value)[0]
-        else:
-            msg = u"\n".join([ws.Obs or "", ws.ErrMsg or ""])
-        # calculate the barcode:
-        if ws.CAE:
-            cae_due = ''.join([c for c in str(ws.Vencimiento or '')
-                                       if c.isdigit()])
-            bars = ''.join([str(ws.Cuit), "%02d" % int(tipo_cbte),
-                              "%04d" % int(punto_vta),
-                              str(ws.CAE), cae_due])
-            bars = bars + self.pysriws_verification_digit_modulo10(bars)
-        else:
-            bars = ""
-
-        GTA_Transaction = pool.get('account_invoice_ec.sri_transaction')
-        with Transaction().new_cursor():
-            GTA_Transaction.create([{'invoice': self,
-                                'pysriws_result': ws.Resultado,
-                                'pysriws_message': msg,
-                                'pysriws_xml_request': ws.XmlRequest,
-                                'pysriws_xml_response': ws.XmlResponse,
-                                }])
-            Transaction().cursor.commit()
-
-        if ws.CAE:
-            # store the results
-            vals = {'pysriws_cae': ws.CAE,
-                   'pysriws_cae_due_date': ws.Vencimiento or None,
-                   'pysriws_barcode': bars,
-                }
-            if not '-' in vals['pysriws_cae_due_date']:
-                fe = vals['pysriws_cae_due_date']
-                vals['pysriws_cae_due_date'] = '-'.join([fe[:4],fe[4:6],fe[6:8]])
-
-            self.write([self], vals)
-        """
 
 class WsTransaction(ModelSQL, ModelView):
     'SRI Ws Transaction'
