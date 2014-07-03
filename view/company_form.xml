@@ -4,6 +4,8 @@
         <page string="GTA WS" id="gta" col="4">
             <label name="default_enviroment_type"/>
             <field name="default_enviroment_type"/>
+            <label name="response_lead_time"/>
+            <field name="response_lead_time"/>
             <separator string="Certificado GTA WS" id='certificate' colspan="4"/>
             <field name="gta_certificate" colspan="4"/>
             <separator string="Clave Privada GTA WS" id='pass' colspan="4"/>

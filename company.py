@@ -18,6 +18,8 @@ class Company(ModelSQL, ModelView):
         help="Clave Privada (.key) de la empresa para webservices GTA")
     default_enviroment_type = fields.Selection(ENVIROMENT_TYPE,
         'Default Enviroment Type', required=False)
+    response_lead_time = fields.Integer('WS Response Lead Time',
+        help="Tiempo de espera maximo de respuesta de GTA")
 
     def gta_authenticate(self, service="wsfe"):
         "Authenticate against GTA, returns token, sign, err_msg (dict)"

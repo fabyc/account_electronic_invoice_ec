@@ -1,4 +1,5 @@
 #! -*- coding: utf8 -*-
+import os
 import logging
 from StringIO import StringIO
 from lxml import etree, builder
@@ -44,6 +45,10 @@ GTA_CODE_TAX = {
         'ICE': '3',
         'RETENCION': '4',
 }
+
+schemas_dir = os.path.dirname(__file__)
+path_schemas = os.path.join(schemas_dir, "schemas")
+
 
 def fmt(num):
     return str(round(num, 2))
@@ -547,7 +552,8 @@ class ElectronicVoucher(ModelSQL, ModelView):
 
     @classmethod
     def validate_schema(cls, evoucher):
-        xsd_file = open('schemas/factura.xsd', 'r')
+        factura_xsd = os.path.join(path_schemas, 'factura.xsd')
+        xsd_file = open(factura_xsd, 'r')
 
         xsd_io = StringIO(xsd_file.read())
         xmlschema_doc = etree.parse(xsd_io)
