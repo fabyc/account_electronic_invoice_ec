@@ -1,12 +1,12 @@
 #This file is part of Tryton.  The COPYRIGHT file at the top level of
 #this repository contains the full copyright notices and license terms.
 #! -*- coding: utf8 -*-
-from trytond.model import ModelView, ModelSQL, fields
+from trytond.model import ModelView, ModelSQL, fields, Workflow
 
 __all__ = ['ContingencyKeys']
 
 
-class ContingencyKeys(ModelSQL, ModelView):
+class ContingencyKeys(ModelSQL, ModelView, Workflow):
     'Contingency Keys'
     __name__ = 'account.contingency_keys'
     key = fields.Text('Key', required=True)
