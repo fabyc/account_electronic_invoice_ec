@@ -1,6 +1,7 @@
 #! -*- coding: utf8 -*-
 import os
 import logging
+import datetime
 from StringIO import StringIO
 from lxml import etree, builder
 from trytond.model import ModelView, ModelSQL, fields
@@ -131,41 +132,72 @@ class ElectronicVoucher(ModelSQL, ModelView):
     def _get_number(cls, invoice):
         Sequence = Pool().get('ir.sequence')
         seq = Sequence.get_id(invoice.pos.pos_sequence.invoice_sequence.id)
-        print seq
         return seq
 
-    def _get_data_verification_digit(self):
-        evoucher_type = EVOUCHER_TYPE[self.evoucher_type]
-        data = self.release_date.strftime('%d%m%Y') + \
+    @classmethod
+    def _get_raw_sequence(cls, invoice, number):
+        Sequence = Pool().get('ir.sequence')
+        seq, = Sequence.browse([invoice.pos.pos_sequence.invoice_sequence.id])
+        val = number
+        if seq.prefix:
+            val = number[len(seq.prefix):]
+        return val
+
+    @classmethod
+    def _get_verification_digit(cls, number):
+        "Compute the verification digit - Modulus 11"
+        factor = 2
+        x = 0
+        for n in reversed(number):
+            x += int(n) * factor
+            factor += 1
+            if factor == 8:
+                factor = 2
+        return (11 - (x % 11))
+
+    @classmethod
+    def _get_data_verification_digit(cls, invoice, enviroment_type,
+            serie, number, code, broadcast_type):
+        evoucher_type = EVOUCHER_TYPE[invoice.type]
+        release_date = datetime.datetime.today()
+        data = release_date.strftime('%d%m%Y') + \
                 evoucher_type + \
-                self.invoice.company.vat_number + \
-                self.enviroment_type + \
-                self.serie + \
-                self.number + \
-                self.code + \
-                self.broadcast_type
-        return '41261533'
+                invoice.company.party.vat_number + \
+                enviroment_type + \
+                serie + \
+                number + \
+                code + \
+                broadcast_type
+        return data
 
     @classmethod
     def create_electronic_voucher(cls, invoice):
         pool = Pool()
         Company = pool.get('company.company')
-        Party = pool.get('party.party')
         if Transaction().context.get('company'):
             company = Company(Transaction().context['company'])
             enviroment_type = company.default_enviroment_type
         else:
             enviroment_type = 1
 
-        serie = cls._get_serie()
-        number = cls._get_number(invoice)
-        verification_digit = Party.compute_check_digit('41261533')
-
-        # TODO: FIXME
         if invoice.state == 'draft':
             broadcast_type = '1'
         else:
             broadcast_type = '2'
+
+        serie = cls._get_serie()
+        number = invoice.number
+        raw_number = cls._get_raw_sequence(invoice, number)
+        code = cls.default_code()
+        full_number = cls._get_data_verification_digit(
+                invoice,
+                enviroment_type,
+                serie,
+                raw_number,
+                code,
+                broadcast_type,
+                )
+        verification_digit = cls._get_verification_digit(full_number)
 
         values = {
             'number': number,

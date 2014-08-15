@@ -45,8 +45,10 @@ class Invoice:
     pos = fields.Many2One('account.pos', 'Point of Sale', 
         states=_POS_STATES, depends=_DEPENDS)
     invoice_type = fields.Many2One('account.pos.sequence', 'Invoice Type',
-        required=False,
-        states=_POS_STATES, depends=_DEPENDS)
+        states={
+            'required': Eval('type') == 'out_invoice',
+            'invisible': Eval('type').in_(['in_invoice', 'in_credit_note']),
+            }, depends=['state', 'type'])
     electronic_vouchers = fields.One2Many('account.electronic_voucher',
            'invoice', 'Electronic Invoice', readonly=True)
     send_sms = fields.Boolean('Send SMS')
@@ -74,14 +76,14 @@ class Invoice:
                 'No fue posible obtener el CAE. Revise las Transacciones ' \
                 'para mas informacion',
             'invalid_journal':
-                'Este diario (%s) no tiene establecido los datos necesaios para ' \
+                'Este diario (%s) no tiene establecido los datos necesarios para ' \
                 'facturar electronicamente',
             'missing_company_regime_tax': ('The iva condition on company '
                     '"%(company)s" is missing.'),
             'missing_party_regime_tax': ('The iva condition on party '
                     '"%(party)s" is missing.'),
             })
-
+    
     @classmethod
     def validate(cls, invoices):
         super(Invoice, cls).validate(invoices)
@@ -101,36 +103,12 @@ class Invoice:
                     })
         """
 
-    @fields.depends('pos', 'party', 'type', 'company', 'invoice_type')
+    @fields.depends('pos', 'party', 'type', 'invoice_type')
     def on_change_pos(self, name=None):
         PosSequence = Pool().get('account.pos.sequence')
         if not self.pos:
             return {'invoice_type': None}
         res = {}
-        """
-        client_iva = None
-        company_iva = None
-        if self.party:
-            client_iva = self.party.regime_tax
-        if self.company:
-            company_iva = self.company.party.regime_tax
-
-        if company_iva == 'responsable_inscripto':
-            if client_iva is None:
-                return res
-            if client_iva == 'responsable_inscripto':
-                kind = 'A'
-            elif client_iva == 'consumidor_final':
-                kind = 'B'
-            elif self.party.vat_country is None:
-                self.raise_user_error('unknown_country')
-            elif self.party.vat_country == 'EC':
-                kind = 'B'
-            else:
-                kind = 'E'
-        else:
-            kind = 'C'
-        """
         return res
 
     def set_number(self):
@@ -152,13 +130,13 @@ class Invoice:
 
         moves = []
         for invoice in invoices:
-            if not invoice.invoice_type:
+            invoice.set_number()
+            if not invoice.invoice_type and invoice.invoice_type == 'out_invoice':
                 invoice.raise_user_error('not_invoice_type')
             if invoice.pos and invoice.pos.pos_type == 'electronic':
                     invoice._create_electronic_voucher()
                     #if not invoice.pysriws_cae:
                     #    invoice.raise_user_error('not_cae')
-            invoice.set_number()
             moves.append(invoice.create_move())
         Move.post(moves)
         cls.write(invoices, {

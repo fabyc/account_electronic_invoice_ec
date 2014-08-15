@@ -33,6 +33,10 @@ class Company(ModelSQL, ModelView):
         #auth_data.update(auth)
         #return auth_data
 
+    @staticmethod
+    def default_default_enviroment_type():
+        return '1'
+
     @classmethod
     def __setup__(cls):
         super(Company, cls).__setup__()
