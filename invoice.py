@@ -9,7 +9,7 @@ from trytond.transaction import Transaction
 from trytond.pool import Pool, PoolMeta
 
 
-__all__ = ['Invoice', 'InvoiceReport']
+__all__ = ['Invoice', 'ElectronicInvoiceReport']
 __metaclass__ = PoolMeta
 
 # GTA = Goverment Tax Authority 
@@ -164,19 +164,19 @@ class Invoice:
         return True
 
 
-class InvoiceReport(Report):
-    __name__ = 'account.invoice'
+class ElectronicInvoiceReport(Report):
+    __name__ = 'account.electronic_invoice.report'
 
     @classmethod
-    def parse(cls, report, records, data, localcontext):
+    def parse(cls, report, objects, data, localcontext):
         pool = Pool()
         User = pool.get('res.user')
         Invoice = pool.get('account.invoice')
-
-        invoice = records[0]
-
+        invoice = objects[0]
         user = User(Transaction().user)
         #localcontext['barcode_img'] = cls._get_pysriws_barcode_img(Invoice, invoice)
+        """
+        #FIXME
         localcontext['condicion_iva'] = cls._get_condicion_iva(user.company)
         localcontext['iibb_type'] = cls._get_iibb_type(user.company)
         localcontext['vat_number'] = cls._get_vat_number(user.company)
@@ -188,8 +188,9 @@ class InvoiceReport(Report):
         localcontext['invoice_impuestos'] = cls._get_invoice_impuestos(Invoice, invoice)
         localcontext['show_tax'] = cls._show_tax(Invoice, invoice)
         localcontext['get_line_amount'] = cls.get_line_amount
-        return super(InvoiceReport, cls).parse(report, records, data,
-                localcontext=localcontext)
+        """
+        return super(ElectronicInvoiceReport, cls).parse(report, objects,
+                data, localcontext=localcontext)
 
     @classmethod
     def get_line_amount(self, type_voucher, line_amount, line_taxes):

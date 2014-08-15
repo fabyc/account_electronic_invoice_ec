@@ -19,5 +19,5 @@ def register():
         ContingencyKeys,
         module='account_electronic_invoice_ec', type_='model')
     Pool.register(
-        InvoiceReport,
+        ElectronicInvoiceReport,
         module='account_electronic_invoice_ec', type_='report')
