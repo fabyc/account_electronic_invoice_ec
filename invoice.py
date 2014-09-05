@@ -50,7 +50,9 @@ class Invoice:
             }, depends=['state', 'type'])
     electronic_vouchers = fields.One2Many('account.electronic_voucher',
            'invoice', 'Electronic Invoice', readonly=True)
-    send_sms = fields.Boolean('Send SMS')
+    send_sms = fields.Boolean('Send SMS', states={
+            'readonly': True,
+            })
 
     @classmethod
     def __setup__(cls):
@@ -157,10 +159,6 @@ class Invoice:
         default = default.copy()
         default['electronic_vouchers'] = []
         return super(Invoice, cls).copy(invoices, default=default)
-
-    @staticmethod
-    def default_send_sms():
-        return True
 
 
 class ElectronicInvoiceReport(Report):

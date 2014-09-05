@@ -3,7 +3,8 @@
 this repository contains the full copyright notices and license terms. -->
 <data>
     <xpath expr="/form/notebook/page[@id='payment']" position="after">
-        <page string="Electronic Invoice" id="electronic_invoice">
+        <page string="Electronic Invoice" id="electronic_invoice"
+            states="{'invisible': Eval('type') in ['in_credit_note', 'in_invoice']}">
             <label name="pos"/>
             <field name="pos"/>
             <label name="invoice_type"/>
