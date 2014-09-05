@@ -71,7 +71,8 @@ class ElectronicVoucher(ModelSQL, ModelView):
         'E-Voucher Type', required=True)
     verification_digit = fields.Integer('Verification Digit', select=True)
     signature_token = fields.Char('Sign Token')
-    raw_xml = fields.Text('Xml File')
+    raw_xml = fields.Text('Xml Request')
+    xml_response = fields.Text('Xml Response')
     invoice = fields.Many2One('account.invoice', 'Invoice',
             states=_STATES, required=False)
     state = fields.Selection([

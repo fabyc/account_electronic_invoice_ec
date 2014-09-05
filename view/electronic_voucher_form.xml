@@ -22,6 +22,8 @@ this repository contains the full copyright notices and license terms. -->
     <field name="pyws_cae"/>
     <separator name="raw_xml" colspan="4"/>
     <field name="raw_xml" colspan="4"/>
+    <separator name="xml_response" colspan="4"/>
+    <field name="xml_response" colspan="4"/>
     <label name="state"/>
     <field name="state"/>
 </form>
