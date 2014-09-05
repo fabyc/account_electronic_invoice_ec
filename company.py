@@ -20,6 +20,10 @@ class Company(ModelSQL, ModelView):
         'Default Enviroment Type', required=False)
     response_lead_time = fields.Integer('WS Response Lead Time',
         help="Tiempo de espera maximo de respuesta de GTA")
+    ws_url = fields.Char('Web Service Url')
+    gta_user = fields.Char('User GTA')
+    password = fields.Char('User Password')
+
 
     def gta_authenticate(self, service="wsfe"):
         "Authenticate against GTA, returns token, sign, err_msg (dict)"

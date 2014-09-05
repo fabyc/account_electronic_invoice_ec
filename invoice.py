@@ -46,7 +46,6 @@ class Invoice:
         states=_POS_STATES, depends=_DEPENDS)
     invoice_type = fields.Many2One('account.pos.sequence', 'Invoice Type',
         states={
-            'required': Eval('type') == 'out_invoice',
             'invisible': Eval('type').in_(['in_invoice', 'in_credit_note']),
             }, depends=['state', 'type'])
     electronic_vouchers = fields.One2Many('account.electronic_voucher',

@@ -10,6 +10,12 @@
             <field name="certificate"/>
             <label name="private_key"/>
             <field name="private_key"/>
+            <label name="ws_url"/>
+            <field name="ws_url"/>
+            <label name="gta_user"/>
+            <field name="gta_user"/>
+            <label name="password"/>
+            <field name="password" widget="password"/>
         </page>
     </xpath>
 </data>
