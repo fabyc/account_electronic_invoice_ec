@@ -12,10 +12,10 @@ ENVIROMENT_TYPE = [
 class Company(ModelSQL, ModelView):
     'Company'
     __name__ = 'company.company'
-    gta_certificate = fields.Text('Certificado GTA',
-        help="Certificado (.crt) de la empresa para webservices GTA")
-    gta_private_key = fields.Text('Clave Privada GTA WS',
-        help="Clave Privada (.key) de la empresa para webservices GTA")
+    certificate = fields.Binary('Certificate GTA',
+        help="Certificado (.crt) de la empresa para webservices")
+    private_key = fields.Binary('Private Key GTA',
+        help="Clave Privada (.key) de la empresa para webservices")
     default_enviroment_type = fields.Selection(ENVIROMENT_TYPE,
         'Default Enviroment Type', required=False)
     response_lead_time = fields.Integer('WS Response Lead Time',
@@ -25,13 +25,16 @@ class Company(ModelSQL, ModelView):
         "Authenticate against GTA, returns token, sign, err_msg (dict)"
         #import gta_auth
         auth_data = {}
+
         # get the authentication credentials:
-        certificate = str(self.gta_certificate)
-        private_key = str(self.gta_private_key)
+        certificate = str(self.certificate)
+        private_key = str(self.private_key)
+
         # call the helper function to obtain the access ticket:
-        #auth = afip_auth.authenticate(service, certificate, private_key)
+        #auth = sri_auth.authenticate(service, certificate, private_key)
         #auth_data.update(auth)
-        #return auth_data
+
+        return auth_data
 
     @staticmethod
     def default_default_enviroment_type():

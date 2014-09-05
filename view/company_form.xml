@@ -6,10 +6,10 @@
             <field name="default_enviroment_type"/>
             <label name="response_lead_time"/>
             <field name="response_lead_time"/>
-            <separator string="Certificado GTA WS" id='certificate' colspan="4"/>
-            <field name="gta_certificate" colspan="4"/>
-            <separator string="Clave Privada GTA WS" id='pass' colspan="4"/>
-            <field name="gta_private_key" colspan="4"/>
+            <label name="certificate"/>
+            <field name="certificate"/>
+            <label name="private_key"/>
+            <field name="private_key"/>
         </page>
     </xpath>
 </data>

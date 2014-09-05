@@ -14,10 +14,10 @@
 
         <record model="ir.action.report" id="account_invoice.report_invoice">
             <field name="active" eval="True"/>
-            <field name="name">Invoice PDF</field>
+            <field name="name">Electronic Invoice</field>
             <field name="model">account.invoice</field>
             <field name="report_name">account.electronic_invoice.report</field>
-            <field name="report">account_electronic_invoice_ec/invoice.odt</field>
+            <field name="report">account_electronic_invoice_ec/electronic_invoice.odt</field>
             <field name="style">company/letter.odt</field>
         </record>
     </data>
