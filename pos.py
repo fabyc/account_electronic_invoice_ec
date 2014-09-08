@@ -78,11 +78,9 @@ class PosSequence(ModelSQL, ModelView):
     def __setup__(cls):
         super(PosSequence, cls).__setup__()
 
-    """
     def get_rec_name(self, name):
         type2name = {}
         for type, name in self.fields_get(fields_names=['invoice_type']
                 )['invoice_type']['selection']:
             type2name[type] = name
         return type2name[self.invoice_type][3:]
-    """

@@ -118,7 +118,8 @@ class Invoice:
         if self.type == 'out_invoice' or self.type == 'out_credit_note':
             vals = {}
             Sequence = Pool().get('ir.sequence')
-
+            if not self.invoice_type:
+                self.raise_user_error('not_invoice_type',)
             vals['number'] = Sequence.get_id(self.invoice_type.invoice_sequence.id)
             # vals['number'] = '%04d-%08d' % (self.pos.number, int(number))
             self.write([self], vals)
@@ -162,15 +163,14 @@ class Invoice:
 
 
 class ElectronicInvoiceReport(Report):
-    __name__ = 'account.electronic_invoice.report'
+    __name__ = 'account.electronic_invoice_report'
 
     @classmethod
     def parse(cls, report, objects, data, localcontext):
         pool = Pool()
         User = pool.get('res.user')
-        Invoice = pool.get('account.invoice')
-        invoice = objects[0]
         user = User(Transaction().user)
+        localcontext['company'] = user.company
         #localcontext['barcode_img'] = cls._get_pysriws_barcode_img(Invoice, invoice)
         """
         #FIXME

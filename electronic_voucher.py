@@ -220,8 +220,8 @@ class ElectronicVoucher(ModelSQL, ModelView):
             voucher.write([voucher], val)
 
     def get_password(self):
-        if self.invoice.company.gta_private_key:
-            return self.invoice.company.gta_private_key
+        if self.invoice.company.private_key:
+            return self.invoice.company.private_key
         return '00000000000'
 
     def get_invoice_line_tax(self, line, tax):
@@ -600,7 +600,7 @@ class ElectronicVoucher(ModelSQL, ModelView):
 
 
 class WsTransaction(ModelSQL, ModelView):
-    'SRI Ws Transaction'
+    'GTA Ws Transaction'
     __name__ = 'account.sri_transaction'
     pysriws_result = fields.Selection([
            ('', 'N.A.'),
@@ -617,32 +617,3 @@ class WsTransaction(ModelSQL, ModelView):
     pysriws_xml_response = fields.Text('Response XML', readonly=True,
        help="Message XML received de GTA (debugger)")
     invoice = fields.Many2One('account.electronic_voucher', 'Electronic Voucher')
-
-
-
-"""
-class ElectronicVoucherSequence(ModelSQL, ModelView):
-    'Point of Sale Sequences'
-    __name__ = 'account.electronic_voucher.sequence'
-
-    electronic_voucher = fields.Many2One('account.electronic_voucher', 'Point of Sale')
-    invoice_type = fields.Selection([
-            ('', ''),
-            ('1', 'Factura A'),
-            ('2', 'Nota de Debito A'),
-            ('3', 'Nota de Credito A'),
-            ('4', 'Recibos A'),
-            ], 'Tipo Comprobante SRI', required=True,
-        help="Tipo de Comprobante SRI")
-    invoice_sequence = fields.Property(fields.Many2One('ir.sequence',
-            'Sequence', required=True,
-            domain=[('code', '=', 'account.invoice')],
-            context={'code': 'account.invoice'}))
-
-    def get_rec_name(self, name):
-        type2name = {}
-        for type, name in self.fields_get(fields_names=['invoice_type']
-                )['invoice_type']['selection']:
-            type2name[type] = name
-        return type2name[self.invoice_type][3:]
-"""

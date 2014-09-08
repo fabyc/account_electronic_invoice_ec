@@ -12,13 +12,19 @@
             <field name="name">invoice_tree</field>
         </record>
 
-        <record model="ir.action.report" id="account_invoice.report_invoice">
+        <record model="ir.action.report" id="report_account_electronic_invoice">
             <field name="active" eval="True"/>
-            <field name="name">Electronic Invoice</field>
+            <field name="name">Electronic Invoice PDF</field>
             <field name="model">account.invoice</field>
-            <field name="report_name">account.electronic_invoice.report</field>
+            <field name="report_name">account.electronic_invoice_report</field>
             <field name="report">account_electronic_invoice_ec/electronic_invoice.odt</field>
-            <field name="style">company/letter.odt</field>
+            <field name="extension">pdf</field>
         </record>
+        <record model="ir.action.keyword" id="report_account_electronic_invoice_keyword">
+            <field name="keyword">form_print</field>
+            <field name="model">account.invoice,-1</field>
+            <field name="action" ref="report_account_electronic_invoice"/>
+        </record>
+
     </data>
 </tryton>
