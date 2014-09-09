@@ -1,26 +1,19 @@
-Installing account_invoice_ar
-=============================
+lInstalling account_electronic_invoice_ec
+=========================================
 
 Prerequisites
 -------------
 
- * Python 2.6 or later (http://www.python.org/)
+ * Python 2.7 or later (http://www.python.org/)
  * trytond (http://www.tryton.org/)
  * trytond_account (http://www.tryton.org/)
+ * trytond_account_invoice (http://www.tryton.org/)
+ * trytond_smtp (http://www.bitbucket.com/)
+ * trytond_electronic_mail (http://www.bitbucket.com/)
+ * trytond_electronic_mail_template (http://www.bitbucket.com/)
 
- * Pyafipws (and dependencies): 
-     * swig
-       apt-get install swig
-     * pysimpelsoap 
-       pip install -e hg+https://code.google.com/p/pysimplesoap/@reingart#egg=pysimplesoap
-     * httplib2
-       pip install httplib2
-     * M2Crypto
-       apt-get install python-m2crypto
-       cp -r /usr/lib/python2.7/dist-packages/M2Crypto* [..]/tryton/lib/pythonX.X/site-packages/
-     * Pyafipws
-       hg clone https://code.google.com/p/pyafipws
-       move pyafipws to ../tryton/lib/pythonX.X/site-packages
+ * pyBarcode
+   hg clone ssh://hg@bitbucket.org/whitie/python-barcode
 
 Installation
 ------------
@@ -41,4 +34,4 @@ documentation:
   http://docs.python.org/inst/inst.html
 
 To use without installation, extract the archive into ``trytond/modules`` with
-the directory name account_invoice_ar.
+the directory name account_electronic_invoice_ec.

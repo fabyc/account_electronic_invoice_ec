@@ -84,10 +84,10 @@ class ElectronicVoucher(ModelSQL, ModelView):
        ], 'State', select=True)
     pyws_cae = fields.Char('CAE', readonly=True,
        help="Authorization Code return by GTA")
+    pygtaws_barcode = fields.Char('Barcode', readonly=True,)
     """
     pysriws_cae_due_date = fields.Date('Vencimiento CAE', readonly=True,
        help="Date limit for verification CAE, returned by GTA")
-    pysriws_barcode = fields.Char('Barcode', readonly=True,)
     pysriws_number = fields.Char('Number', readonly=True,
             help="Invoice Number send to GTA")
     """

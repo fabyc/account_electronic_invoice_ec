@@ -2,6 +2,9 @@
 #This file is part of Tryton.  The COPYRIGHT file at the top level of
 #this repository contains the full copyright notices and license terms.
 from decimal import Decimal
+import barcode
+from barcode.writer import ImageWriter
+import StringIO
 from trytond.model import Workflow, fields, ModelView
 from trytond.report import Report
 from trytond.pyson import Eval, And
@@ -51,6 +54,12 @@ class Invoice:
     electronic_vouchers = fields.One2Many('account.electronic_voucher',
            'invoice', 'Electronic Invoice', readonly=True)
     send_sms = fields.Boolean('Send SMS', states={
+            'readonly': True,
+            })
+    barcode = fields.Char('Barcode', states={
+            'readonly': True,
+            })
+    barcode_img = fields.Binary('Barcode Image', states={
             'readonly': True,
             })
 
@@ -106,7 +115,6 @@ class Invoice:
 
     @fields.depends('pos', 'party', 'type', 'invoice_type')
     def on_change_pos(self, name=None):
-        PosSequence = Pool().get('account.pos.sequence')
         if not self.pos:
             return {'invoice_type': None}
         res = {}
@@ -121,7 +129,6 @@ class Invoice:
             if not self.invoice_type:
                 self.raise_user_error('not_invoice_type',)
             vals['number'] = Sequence.get_id(self.invoice_type.invoice_sequence.id)
-            # vals['number'] = '%04d-%08d' % (self.pos.number, int(number))
             self.write([self], vals)
 
     @classmethod
@@ -137,17 +144,30 @@ class Invoice:
                 invoice.raise_user_error('not_invoice_type')
             if invoice.pos and invoice.pos.pos_type == 'electronic':
                     invoice._create_electronic_voucher()
-                    #if not invoice.pysriws_cae:
+                    #if not invoice.pygtaws_cae:
                     #    invoice.raise_user_error('not_cae')
             moves.append(invoice.create_move())
         Move.post(moves)
+
+        barcode = '9782212110708'
+        barcode_img = cls._create_img_barcode(barcode)
         cls.write(invoices, {
                 'state': 'posted',
+                'barcode': barcode,
+                'barcode_img': barcode_img,
                 })
         for invoice in invoices:
             if invoice.type in ('out_invoice', 'out_credit_note'):
                 pass
                 #invoice.print_invoice()
+
+    @classmethod
+    def _create_img_barcode(cls, number):
+        fp = StringIO.StringIO()
+        barcode.generate('CODE128', number, writer=ImageWriter(), output=fp)
+        img_buffer = fp.getvalue()
+        fp.close()
+        return img_buffer
 
     def _create_electronic_voucher(self):
         Evoucher = Pool().get('account.electronic_voucher')
@@ -214,20 +234,19 @@ class ElectronicInvoiceReport(Report):
             return Decimal('00.00')
 
     @classmethod
-    def _get_pyws_barcode_img(cls, Invoice, invoice):
+    def _get_barcode_image(cls, Invoice, invoice):
         "Generate the required barcode Interleaved of 7 image using PIL"
-        from pysriws.pyi25 import PyI25
-        from cStringIO import StringIO as StringIO
-        # create the helper:
-        pyi25 = PyI25()
-        output = StringIO()
-        if not invoice.pysriws_barcode:
+        if not invoice.gtaws_barcode:
             return
-        # call the helper:
-        bars = ''.join([c for c in invoice.pysriws_barcode if c.isdigit()])
-        if not bars:
-            bars = "00"
-        pyi25.GenerarImagen(bars, output, basewidth=3, width=380, height=50, extension="PNG")
-        image = buffer(output.getvalue())
-        output.close()
-        return image
+        try:
+            import barcode
+        except:
+            print "Warning: pyBarcode module not found...!"
+            return
+
+        EAN = barcode.get_barcode_class('code128')
+        ean = EAN(u'9782212110708')
+
+        # create the helper:
+        fullname = ean.save('ean128_barcode')
+        return fullname

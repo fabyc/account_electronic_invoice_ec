@@ -8,6 +8,10 @@ this repository contains the full copyright notices and license terms. -->
             <field name="pos"/>
             <label name="invoice_type"/>
             <field name="invoice_type" widget="selection"/>
+            <label name="barcode"/>
+            <field name="barcode"/>
+            <field name="barcode_img"/>
+            </newline>
             <label name="send_sms"/>
             <field name="send_sms"/>
             <field name="electronic_vouchers" colspan="4"
