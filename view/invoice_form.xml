@@ -11,7 +11,7 @@ this repository contains the full copyright notices and license terms. -->
             <label name="barcode"/>
             <field name="barcode"/>
             <field name="barcode_img"/>
-            </newline>
+            <newline/>
             <label name="send_sms"/>
             <field name="send_sms"/>
             <field name="electronic_vouchers" colspan="4"
