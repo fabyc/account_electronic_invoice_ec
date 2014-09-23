@@ -144,25 +144,23 @@ class Invoice:
                 invoice.raise_user_error('not_invoice_type')
             if invoice.pos and invoice.pos.pos_type == 'electronic':
                     invoice._create_electronic_voucher()
-                    #if not invoice.pygtaws_cae:
-                    #    invoice.raise_user_error('not_cae')
             moves.append(invoice.create_move())
         Move.post(moves)
 
-        barcode = '9782212110708'
-        barcode_img = cls._create_img_barcode(barcode)
-        cls.write(invoices, {
+        for invoice in invoices:
+            invoice._set_barcode()
+
+    def _set_barcode(self):
+        if self.type in ('out_invoice', 'out_credit_note'):
+            barcode = '9782212110708'
+            barcode_img = self._create_img_barcode(barcode)
+            self.write([self], {
                 'state': 'posted',
                 'barcode': barcode,
                 'barcode_img': barcode_img,
                 })
-        for invoice in invoices:
-            if invoice.type in ('out_invoice', 'out_credit_note'):
-                pass
-                #invoice.print_invoice()
 
-    @classmethod
-    def _create_img_barcode(cls, number):
+    def _create_img_barcode(self, number):
         fp = StringIO.StringIO()
         barcode.generate('CODE128', number, writer=ImageWriter(), output=fp)
         img_buffer = fp.getvalue()
