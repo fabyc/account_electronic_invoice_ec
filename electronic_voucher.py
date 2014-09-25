@@ -73,6 +73,7 @@ class ElectronicVoucher(ModelSQL, ModelView):
     signature_token = fields.Char('Sign Token')
     raw_xml = fields.Text('Xml Request')
     xml_response = fields.Text('Xml Response')
+    cache_xml_response = fields.Binary('Cache Xml Response', readonly=True)
     invoice = fields.Many2One('account.invoice', 'Invoice',
             states=_STATES, required=False)
     state = fields.Selection([

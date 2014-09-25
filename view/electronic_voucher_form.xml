@@ -23,6 +23,8 @@ this repository contains the full copyright notices and license terms. -->
     <separator name="raw_xml" colspan="4"/>
     <field name="raw_xml" colspan="4"/>
     <separator name="xml_response" colspan="4"/>
+    <label name="cache_xml_response"/>
+    <field name="cache_xml_response"/>
     <field name="xml_response" colspan="4"/>
     <label name="state"/>
     <field name="state"/>
