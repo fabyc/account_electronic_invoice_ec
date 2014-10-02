@@ -24,7 +24,6 @@ class Pos(ModelSQL, ModelView):
     pos_type = fields.Selection([
             ('manual', 'Manual'),
             ('electronic', 'Electronic'),
-            ('fiscal_printer', 'Fiscal Printer'),
             ], 'Pos Type')
 
     @classmethod

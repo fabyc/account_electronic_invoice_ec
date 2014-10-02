@@ -2,6 +2,7 @@ from trytond.pool import Pool
 
 from .invoice import *
 from .company import *
+from .sale import *
 from .pos import *
 from .address import *
 from .electronic_voucher import *
@@ -17,6 +18,7 @@ def register():
         ElectronicVoucher,
         WsTransaction,
         ContingencyKeys,
+        Sale,
         module='account_electronic_invoice_ec', type_='model')
     Pool.register(
         ElectronicInvoiceReport,
