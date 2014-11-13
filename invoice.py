@@ -133,6 +133,33 @@ class Invoice:
 
     @classmethod
     @ModelView.button
+    @Workflow.transition('validated')
+    def validate_invoice(cls, invoices):
+        for invoice in invoices:
+            if invoice.type in ('in_invoice', 'in_credit_note'):
+                invoice.set_number()
+                invoice.create_move()
+            else:
+                invoice.set_number()
+                if not invoice.invoice_type and invoice.invoice_type == 'out_invoice':
+                    invoice.raise_user_error('not_invoice_type')
+                if not invoice.pos or invoice.pos.pos_type != 'electronic':
+                    continue
+                response_ok = invoice._create_electronic_voucher()
+                if response_ok:
+                    print "Response was ok by GTA..."
+                    approved = invoice._send_key_gta()
+                    if approved:
+                        print "Invoice approved por GTA!"
+                        invoice._set_barcode()
+
+    def _send_key_gta(self):
+        print "sending key to gta..."
+        return False
+
+    """
+    @classmethod
+    @ModelView.button
     @Workflow.transition('posted')
     def post(cls, invoices):
         Move = Pool().get('account.move')
@@ -140,15 +167,9 @@ class Invoice:
         moves = []
         for invoice in invoices:
             invoice.set_number()
-            if not invoice.invoice_type and invoice.invoice_type == 'out_invoice':
-                invoice.raise_user_error('not_invoice_type')
-            if invoice.pos and invoice.pos.pos_type == 'electronic':
-                    invoice._create_electronic_voucher()
             moves.append(invoice.create_move())
         Move.post(moves)
-
-        for invoice in invoices:
-            invoice._set_barcode()
+    """
 
     def _set_barcode(self):
         if self.type in ('out_invoice', 'out_credit_note'):
@@ -169,7 +190,7 @@ class Invoice:
 
     def _create_electronic_voucher(self):
         Evoucher = Pool().get('account.electronic_voucher')
-        Evoucher.create_electronic_voucher(self)
+        return Evoucher.create_electronic_voucher(self)
 
     @classmethod
     def copy(cls, invoices, default=None):

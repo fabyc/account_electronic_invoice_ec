@@ -212,26 +212,32 @@ class ElectronicVoucher(ModelSQL, ModelView):
             'state': 'draft',
             'invoice': invoice.id,
         }
-        vouchers = cls.create([values])
-        for voucher in vouchers:
-            raw_data = voucher.create_xml(invoice)
-            val = {'raw_xml': raw_data}
-            response = cls.validate_schema(raw_data)
-            print "Is valid schema?: ", response
-            voucher.write([voucher], val)
 
-    def get_password(self):
-        if self.invoice.company.private_key:
-            return self.invoice.company.private_key
+        unsigned_xml_invoice = cls.create_xml(invoice, values)
+        print unsigned_xml_invoice
+        response = cls.validate_schema(unsigned_xml_invoice)
+        print "Is valid schema?: ", response
+        if response:
+            signed_invoice = cls.set_sign_invoice(unsigned_xml_invoice)
+            vouchers = cls.create([values])
+            cls.write(vouchers, {'raw_xml': signed_invoice})
+        return response
+
+    def set_sign_invoice(self, xml):
+        pass
+
+    @classmethod
+    def get_password(cls, invoice):
+        if invoice.company.private_key:
+            return invoice.company.private_key
         return '00000000000'
 
-    def get_invoice_line_tax(self, line, tax):
+    @classmethod
+    def get_invoice_line_tax(cls, line, tax, invoice):
         pool = Pool()
         Tax = pool.get('account.tax')
 
-        if not self.invoice:
-            return
-        context = self.invoice.get_tax_context()
+        context = invoice.get_tax_context()
 
         with Transaction().set_context(**context):
             taxes = Tax.compute([tax], line.unit_price, line.quantity)
@@ -240,7 +246,23 @@ class ElectronicVoucher(ModelSQL, ModelView):
         else:
             return '0.00'
 
-    def metaprocess_xml(self, data):
+    @classmethod
+    def validate_schema(cls, evoucher):
+        factura_xsd = os.path.join(path_schemas, 'factura.xsd')
+        xsd_file = open(factura_xsd, 'r')
+
+        xsd_io = StringIO(xsd_file.read())
+        xmlschema_doc = etree.parse(xsd_io)
+        xmlschema = etree.XMLSchema(xmlschema_doc)
+        xsd_file.close()
+
+        evoucher_io = StringIO(evoucher)
+        doc = etree.parse(evoucher_io)
+        res = xmlschema.validate(doc)
+        return res
+
+    @classmethod
+    def metaprocess_xml(cls, data):
         E = builder.ElementMaker()
         """
         Parameters
@@ -255,33 +277,35 @@ class ElectronicVoucher(ModelSQL, ModelView):
                 args = []
                 for v1, v2 in values:
                     if isinstance(v2, dict):
-                        subargs = self.metaprocess_xml(v2)
+                        subargs = cls.metaprocess_xml(v2)
                         args.append(partial(E, v1)(*subargs))
                     else:
                         args.append(partial(E, v1)(v2))
                 res.append(partial(E, parent)(*args))
         return res
 
-    def create_xml(self, invoice):
+    @classmethod
+    def create_xml(cls, invoice, vals):
+        head_xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
         E = builder.ElementMaker()
         #------------ INFOTRIBUTARIA ------------
         street = ''
         if invoice.company.party.addresses[0].street:
             street = invoice.company.party.addresses[0].street
-        password = self.get_password()
+        password = cls.get_password(invoice)
         INFOTRIBUTARIA = {
             'infoTributaria': [
                     [
-                    ('ambiente', self.enviroment_type),
-                    ('tipoEmision', self.broadcast_type),
-                    ('razonSocial', self.invoice.company.party.name),
-                    ('nombreComercial', self.invoice.company.party.commercial_name),
-                    ('ruc',  self.invoice.company.party.vat_number),
+                    ('ambiente', vals['enviroment_type']),
+                    ('tipoEmision', vals['broadcast_type']),
+                    ('razonSocial', invoice.company.party.name),
+                    ('nombreComercial', invoice.company.party.commercial_name),
+                    ('ruc', invoice.company.party.vat_number),
                     ('claveAcceso', password),
-                        ('codDoc', self.evoucher_type),
-                    ('estab', self.invoice.pos.code),
-                    ('ptoEmi', self.invoice.pos.code),
-                    ('secuencial', self.number),
+                        ('codDoc', vals['evoucher_type']),
+                    ('estab', invoice.pos.code),
+                    ('ptoEmi', invoice.pos.code),
+                    ('secuencial', vals['number']),
                     ('dirMatriz', street),
                     ],]
         }
@@ -295,9 +319,9 @@ class ElectronicVoucher(ModelSQL, ModelView):
         for invoice_tax in invoice.taxes:
 
             if not invoice_tax.tax.group or not invoice_tax.tax.group.code:
-                self.raise_user_error('missing_tax_group', invoice_tax.tax.name)
+                cls.raise_user_error('missing_tax_group', invoice_tax.tax.name)
             if not invoice_tax.tax_code or not invoice_tax.tax_code.code:
-                self.raise_user_error('missing_tax_code', invoice_tax.tax.name)
+                cls.raise_user_error('missing_tax_code', invoice_tax.tax.name)
 
             if invoice_tax.tax.group.code == GTA_CODE_TAX['IVA']:
                 total_taxes.append([
@@ -320,13 +344,13 @@ class ElectronicVoucher(ModelSQL, ModelView):
 
         INFOFACTURA = {
             'infoFactura': [[
-                    ('fechaEmision', str(self.invoice.invoice_date)),
+                    ('fechaEmision', str(invoice.invoice_date)),
                     ('dirEstablecimiento', street),
                     ('contribuyenteEspecial', '12345'),
-                    ('obligadoContabilidad', self.invoice.party.mandatory_accounting),
-                    ('tipoIdentificacionComprador', self.invoice.party.type_document),
-                    ('razonSocialComprador', self.invoice.party.name),
-                    ('identificacionComprador', self.invoice.party.vat_number),
+                    ('obligadoContabilidad', invoice.party.mandatory_accounting),
+                    ('tipoIdentificacionComprador', invoice.party.type_document),
+                    ('razonSocialComprador', invoice.party.name),
+                    ('identificacionComprador', invoice.party.vat_number),
                     ('totalSinImpuestos', fmt(invoice.untaxed_amount)),
                     ('totalDescuento', '0.00'),
                     ('totalConImpuestos', TOTAL_TAXES),
@@ -342,7 +366,7 @@ class ElectronicVoucher(ModelSQL, ModelView):
             for tax in line.taxes:
                 if not tax.group.code == GTA_CODE_TAX['IVA']:
                     continue
-                tax_amount = self.get_invoice_line_tax(line, tax)
+                tax_amount = cls.get_invoice_line_tax(line, tax, invoice)
                 line_taxes.append([
                     ('codigo', tax.group.code),
                     ('codigoPorcentaje', tax.invoice_tax_code.code),
@@ -368,22 +392,22 @@ class ElectronicVoucher(ModelSQL, ModelView):
 
         #------------ INFOADICIONAL ------------
         INFOAD = []
-        if self.invoice.party.addresses[0].street:
+        if invoice.party.addresses[0].street:
             INFOAD.append(E.campoAdicional(
-                self.invoice.party.addresses[0].street,
+                invoice.party.addresses[0].street,
                 nombre='Direccion',
                 ))
-        if self.invoice.party.email:
+        if invoice.party.email:
             INFOAD.append(E.campoAdicional(
-                    self.invoice.party.email,
+                    invoice.party.email,
                     nombre='Email',
                     ))
 
-        infoTributaria_ = self.metaprocess_xml(INFOTRIBUTARIA)[0]
-        infoFactura_ = self.metaprocess_xml(INFOFACTURA)[0]
+        infoTributaria_ = cls.metaprocess_xml(INFOTRIBUTARIA)[0]
+        infoFactura_ = cls.metaprocess_xml(INFOFACTURA)[0]
         infoAdicional_ = E.infoAdicional(*INFOAD)
-        detalles_ = E.detalles(*self.metaprocess_xml(DETALLE))
-        retenciones_ = E.retenciones(*self.metaprocess_xml(RETENCIONES))
+        detalles_ = E.detalles(*cls.metaprocess_xml(DETALLE))
+        retenciones_ = E.retenciones(*cls.metaprocess_xml(RETENCIONES))
 
         evoucher = E.factura(
                 infoTributaria_,
@@ -391,9 +415,10 @@ class ElectronicVoucher(ModelSQL, ModelView):
                 detalles_,
                 retenciones_,
                 infoAdicional_,
+                id="comprobante", version="1.1.2",
         )
-        data = etree.tostring(evoucher, pretty_print=True)
-        return data
+        body = etree.tostring(evoucher, pretty_print=True)
+        return (head_xml + body)
 
     def do_request_ws(self):
         logger = logging.getLogger('py_ws')
@@ -583,21 +608,6 @@ class ElectronicVoucher(ModelSQL, ModelView):
                 'it': 417, 'nl': 423, 'pt': 620, 'uk': 426, 'sz': 430,
                 'de': 438, 'ru': 444, 'eu': 497,
                 }[self.invoice_address.country.code.lower()]
-
-    @classmethod
-    def validate_schema(cls, evoucher):
-        factura_xsd = os.path.join(path_schemas, 'factura.xsd')
-        xsd_file = open(factura_xsd, 'r')
-
-        xsd_io = StringIO(xsd_file.read())
-        xmlschema_doc = etree.parse(xsd_io)
-        xmlschema = etree.XMLSchema(xmlschema_doc)
-        xsd_file.close()
-
-        evoucher_io = StringIO(evoucher)
-        doc = etree.parse(evoucher_io)
-        res = xmlschema.validate(doc)
-        return res
 
 
 class WsTransaction(ModelSQL, ModelView):
