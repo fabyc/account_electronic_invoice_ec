@@ -2,6 +2,7 @@
 import os
 import logging
 import datetime
+from decimal import Decimal
 from StringIO import StringIO
 from lxml import etree, builder
 from trytond.model import ModelView, ModelSQL, fields
@@ -51,8 +52,15 @@ schemas_dir = os.path.dirname(__file__)
 path_schemas = os.path.join(schemas_dir, "schemas")
 
 
-def fmt(num):
-    return str(round(num, 2))
+
+def fmt2(num):
+    #return str(round(num, 2))
+    return ("%.2f" % float(num))
+
+def fmt6(num):
+    #return str(round(num, 2))
+    return ("%.6f" % float(num))
+
 
 class ElectronicVoucher(ModelSQL, ModelView):
     'Electronic Voucher'
@@ -214,7 +222,6 @@ class ElectronicVoucher(ModelSQL, ModelView):
         }
 
         unsigned_xml_invoice = cls.create_xml(invoice, values)
-        print unsigned_xml_invoice
         response = cls.validate_schema(unsigned_xml_invoice)
         print "Is valid schema?: ", response
         if response:
@@ -223,14 +230,15 @@ class ElectronicVoucher(ModelSQL, ModelView):
             cls.write(vouchers, {'raw_xml': signed_invoice})
         return response
 
-    def set_sign_invoice(self, xml):
+    @classmethod
+    def set_sign_invoice(cls, xml):
         pass
 
     @classmethod
     def get_password(cls, invoice):
         if invoice.company.private_key:
             return invoice.company.private_key
-        return '00000000000'
+        return '2103201301000000000000110015010000000101234567811'
 
     @classmethod
     def get_invoice_line_tax(cls, line, tax, invoice):
@@ -302,7 +310,7 @@ class ElectronicVoucher(ModelSQL, ModelView):
                     ('nombreComercial', invoice.company.party.commercial_name),
                     ('ruc', invoice.company.party.vat_number),
                     ('claveAcceso', password),
-                        ('codDoc', vals['evoucher_type']),
+                        ('codDoc', EVOUCHER_TYPE[vals['evoucher_type']]),
                     ('estab', invoice.pos.code),
                     ('ptoEmi', invoice.pos.code),
                     ('secuencial', vals['number']),
@@ -315,6 +323,12 @@ class ElectronicVoucher(ModelSQL, ModelView):
 
         total_taxes  = []
         total_withholdings  = []
+        total_with_taxes = Decimal(0)
+        
+        #iva_used_codes = []
+        #iva_ret_codes = []
+        ret_used_codes = []
+        default_ret_codes = ['327', '328', '3']
 
         for invoice_tax in invoice.taxes:
 
@@ -327,37 +341,30 @@ class ElectronicVoucher(ModelSQL, ModelView):
                 total_taxes.append([
                     ('codigo', invoice_tax.tax.group.code),
                     ('codigoPorcentaje', invoice_tax.tax_code.code),
-                    ('baseImponible', fmt(invoice_tax.base)),
-                    ('valor', fmt(invoice_tax.amount)),
+                    ('baseImponible', fmt2(invoice_tax.base)),
+                    ('valor', fmt2(invoice_tax.amount)),
                 ])
-            elif invoice_tax.tax.group.code == GTA_CODE_TAX['RETENCION']:
+            
+            if invoice_tax.tax.group.code == GTA_CODE_TAX['RETENCION']:
                 total_withholdings.append([
                     ('codigo', invoice_tax.tax.group.code),
                     ('codigoPorcentaje', invoice_tax.tax_code.code),
-                    ('tarifa', fmt(invoice_tax.tax.rate * 100)),
-                    ('valor', fmt(invoice_tax.amount)),
+                    ('tarifa', fmt2(invoice_tax.tax.rate * 100)),
+                    ('valor', fmt2(invoice_tax.amount)),
                 ])
-            elif invoice_tax.tax.group.code == GTA_CODE_TAX['ICE']:
+                ret_used_codes.append(invoice_tax.tax.group.code)
+
+            if invoice_tax.tax.group.code == GTA_CODE_TAX['ICE']:
                 pass
+            total_with_taxes += invoice_tax.amount
 
-        TOTAL_TAXES['totalImpuesto'] = total_taxes
-
-        INFOFACTURA = {
-            'infoFactura': [[
-                    ('fechaEmision', str(invoice.invoice_date)),
-                    ('dirEstablecimiento', street),
-                    ('contribuyenteEspecial', '12345'),
-                    ('obligadoContabilidad', invoice.party.mandatory_accounting),
-                    ('tipoIdentificacionComprador', invoice.party.type_document),
-                    ('razonSocialComprador', invoice.party.name),
-                    ('identificacionComprador', invoice.party.vat_number),
-                    ('totalSinImpuestos', fmt(invoice.untaxed_amount)),
-                    ('totalDescuento', '0.00'),
-                    ('totalConImpuestos', TOTAL_TAXES),
-                    ('propina','0.00'),
-                    ('moneda', 'DOLAR'),
-                ],]
-        }
+        for ret_code in set(default_ret_codes) - set(ret_used_codes):
+            total_withholdings.append([
+                    ('codigo', '4'),
+                    ('codigoPorcentaje', ret_code),
+                    ('tarifa', fmt2(0)),
+                    ('valor', fmt2(0)),
+                ])
 
         #------------ DETALLES ------------
         detalles = []
@@ -370,18 +377,19 @@ class ElectronicVoucher(ModelSQL, ModelView):
                 line_taxes.append([
                     ('codigo', tax.group.code),
                     ('codigoPorcentaje', tax.invoice_tax_code.code),
-                    ('tarifa', fmt(tax.rate*100)),
-                    ('baseImponible', fmt(line.amount)),
-                    ('valor', fmt(tax_amount)),
+                    ('tarifa', fmt2(tax.rate * 100)),
+                    ('baseImponible', fmt2(line.amount)),
+                    ('valor', fmt2(tax_amount)),
                 ])
-            discount = '0.00'
+            total_with_taxes += line.amount
+            descuento = fmt2(0)
             detalles.append([
                 ('codigoPrincipal', line.product.code),
                 ('descripcion', line.product.name),
-                ('cantidad', fmt(line.quantity)),
-                ('precioUnitario', str(line.unit_price)),
-                ('descuento', discount),
-                ('precioTotalSinImpuesto', fmt(line.amount)),
+                ('cantidad', fmt6(line.quantity)),
+                ('precioUnitario', fmt6(line.unit_price)),
+                ('descuento', descuento),
+                ('precioTotalSinImpuesto', fmt2(line.amount)),
                 ('impuestos', {'impuesto': line_taxes}),
                 ])
         DETALLE = {'detalle': detalles}
@@ -402,6 +410,28 @@ class ElectronicVoucher(ModelSQL, ModelView):
                     invoice.party.email,
                     nombre='Email',
                     ))
+
+        TOTAL_TAXES['totalImpuesto'] = total_taxes
+        tip = Decimal(0)
+        importeTotal = total_with_taxes + tip
+        totalDescuento = fmt2(0)
+        INFOFACTURA = {
+            'infoFactura': [[
+                    ('fechaEmision', vals['release_date'].strftime('%d/%m/%Y')),
+                    ('dirEstablecimiento', street),
+                    ('contribuyenteEspecial', '12345'),
+                    ('obligadoContabilidad', invoice.party.mandatory_accounting.upper()),
+                    ('tipoIdentificacionComprador', invoice.party.type_document),
+                    ('razonSocialComprador', invoice.party.name),
+                    ('identificacionComprador', invoice.party.vat_number),
+                    ('totalSinImpuestos', fmt2(invoice.untaxed_amount)),
+                    ('totalDescuento', totalDescuento),
+                    ('totalConImpuestos', TOTAL_TAXES),
+                    ('propina', fmt2(tip)),
+                    ('importeTotal', fmt2(importeTotal)),
+                    ('moneda', 'DOLAR'),
+                ],]
+        }
 
         infoTributaria_ = cls.metaprocess_xml(INFOTRIBUTARIA)[0]
         infoFactura_ = cls.metaprocess_xml(INFOFACTURA)[0]

@@ -121,6 +121,8 @@ class Invoice:
         return res
 
     def set_number(self):
+        if self.number:
+            return
         super(Invoice, self).set_number()
 
         if self.type == 'out_invoice' or self.type == 'out_credit_note':
