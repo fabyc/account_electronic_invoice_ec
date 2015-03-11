@@ -1,16 +1,23 @@
 #! -*- coding: utf8 -*-
 
-from trytond.model import ModelView, ModelSQL, fields
+from trytond.model import fields
+from trytond.pool import PoolMeta, Pool
 
 __all__ = ['Company']
+__metaclass__ = PoolMeta
 
 ENVIROMENT_TYPE = [
         ('1', 'Test'),
         ('2', 'Production'),
 ]
 
-class Company(ModelSQL, ModelView):
-    'Company'
+
+BROADCAST_TYPE_SRI = [
+        ('1', 'Normal'),
+        ('2', 'Unavailable system'),
+]
+
+class Company:
     __name__ = 'company.company'
     certificate = fields.Binary('Certificate GTA',
         help="Certificado (.crt) de la empresa para webservices")
@@ -21,9 +28,13 @@ class Company(ModelSQL, ModelView):
     response_lead_time = fields.Integer('WS Response Lead Time',
         help="Tiempo de espera maximo de respuesta de GTA")
     ws_url = fields.Char('Web Service Url')
-    gta_user = fields.Char('User GTA')
-    password = fields.Char('User Password')
-
+    ws_test_url = fields.Char('Web Test Service Url')
+    #gta_user = fields.Char('User GTA')
+    gta_user_password_hash = fields.Char('GTA User Password')
+    gta_user_password = fields.Function(fields.Char('Password'), getter='get_password',
+        setter='set_password')
+    broadcast_type = fields.Selection(BROADCAST_TYPE_SRI, 'Broadcast Type', 
+        required=False)
 
     def gta_authenticate(self, service="wsfe"):
         "Authenticate against GTA, returns token, sign, err_msg (dict)"
@@ -47,3 +58,18 @@ class Company(ModelSQL, ModelView):
     @classmethod
     def __setup__(cls):
         super(Company, cls).__setup__()
+
+    def get_password(self, name):
+        return 'x' * 10
+
+    @classmethod
+    def set_password(cls, companies, name, value):
+        User = Pool().get("res.user")
+        if value == 'x' * 10:
+            return
+        to_write = []
+        for user in companies:
+            to_write.extend([[user], {
+                        'gta_user_password_hash': User.hash_password(value),
+                        }])
+        cls.write(*to_write)

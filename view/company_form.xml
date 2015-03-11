@@ -12,10 +12,12 @@
             <field name="private_key"/>
             <label name="ws_url"/>
             <field name="ws_url"/>
-            <label name="gta_user"/>
-            <field name="gta_user"/>
-            <label name="password"/>
-            <field name="password" widget="password"/>
+            <label name="ws_test_url"/>
+            <field name="ws_test_url"/>
+            <label name="broadcast_type"/>
+            <field name="broadcast_type"/>
+            <label name="gta_user_password_hash"/>
+            <field name="gta_user_password_hash" widget="password"/>
         </page>
     </xpath>
 </data>
