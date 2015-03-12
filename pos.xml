@@ -32,7 +32,6 @@
             <field name="view" ref="pos_view_form"/>
             <field name="act_window" ref="act_account_pos"/>
         </record>
-
         <menuitem name="Points of Sale" parent="menu_point_of_sale"
             id="point_of_sale" action="act_account_pos"/>
 
@@ -46,6 +45,24 @@
             <field name="type">tree</field>
             <field name="name">pos_sequence_tree</field>
         </record>
+        <record model="ir.action.act_window" id="act_account_pos_sequence">
+            <field name="name">Points of Sale Sequence</field>
+            <field name="res_model">account.pos.sequence</field>
+        </record>
+        <record model="ir.action.act_window.view"
+            id="act_account_pos_sequence_view1">
+            <field name="sequence" eval="10"/>
+            <field name="view" ref="pos_sequence_view_tree"/>
+            <field name="act_window" ref="act_account_pos_sequence"/>
+        </record>
+        <record model="ir.action.act_window.view"
+            id="act_account_pos_sequence_view2">
+            <field name="sequence" eval="20"/>
+            <field name="view" ref="pos_sequence_view_form"/>
+            <field name="act_window" ref="act_account_pos_sequence"/>
+        </record>
+        <menuitem name="Points of Sale Sequence" parent="menu_point_of_sale"
+            id="point_of_sale_sequence" action="act_account_pos_sequence"/>
 
     </data>
 </tryton>

@@ -6,12 +6,13 @@
             <field name="inherit" ref="account_invoice.invoice_view_form"/>
             <field name="name">invoice_form</field>
         </record>
+        <!--
         <record model="ir.ui.view" id="invoice_view_tree">
             <field name="model">account.invoice</field>
             <field name="inherit" ref="account_invoice.invoice_view_tree"/>
             <field name="name">invoice_tree</field>
         </record>
-
+        -->
         <record model="ir.action.report" id="report_account_electronic_invoice">
             <field name="active" eval="True"/>
             <field name="name">Electronic Invoice PDF</field>

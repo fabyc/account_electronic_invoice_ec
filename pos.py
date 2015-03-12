@@ -65,7 +65,8 @@ class Pos(ModelSQL, ModelView):
 class PosSequence(ModelSQL, ModelView):
     'Point of Sale Sequences'
     __name__ = 'account.pos.sequence'
-    _rec_name = 'invoice_type'
+    _rec_name = 'name'
+    name = fields.Char('Name', required=False)
     invoice_type = fields.Selection(EVOUCHER_TYPE.items(),
         'Invoice Type', required=True)
     invoice_sequence = fields.Property(fields.Many2One('ir.sequence',
@@ -76,10 +77,3 @@ class PosSequence(ModelSQL, ModelView):
     @classmethod
     def __setup__(cls):
         super(PosSequence, cls).__setup__()
-
-    def get_rec_name(self, name):
-        type2name = {}
-        for type, name in self.fields_get(fields_names=['invoice_type']
-                )['invoice_type']['selection']:
-            type2name[type] = name
-        return type2name[self.invoice_type][3:]

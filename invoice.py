@@ -47,10 +47,6 @@ class Invoice:
     __name__ = 'account.invoice'
     pos = fields.Many2One('account.pos', 'Point of Sale', 
         states=_POS_STATES, depends=_DEPENDS)
-    invoice_type = fields.Many2One('account.pos.sequence', 'Invoice Type',
-        states={
-            'invisible': Eval('type').in_(['in_invoice', 'in_credit_note']),
-            }, depends=['state', 'type'])
     electronic_vouchers = fields.One2Many('account.electronic_voucher',
            'invoice', 'Electronic Invoice', readonly=True)
     send_sms = fields.Boolean('Send SMS', states={
@@ -72,7 +68,7 @@ class Invoice:
                 },
             })
         cls._error_messages.update({
-            'not_invoice_type': 'The field Type Invoice is required.',
+            'missing_pos': 'The Pos is missing or pos sequence.',
             'missing_sequence': 'There is not sequence for invoces type: %s',
             'too_many_sequences':
                 'Too many sequences for invoices type: %s',
@@ -94,32 +90,6 @@ class Invoice:
                     '"%(party)s" is missing.'),
             })
     
-    @classmethod
-    def validate(cls, invoices):
-        super(Invoice, cls).validate(invoices)
-        for invoice in invoices:
-            invoice.check_invoice_type()
-
-    def check_invoice_type(self):
-        pass
-        """
-        if not self.company.party.regime_tax:
-            self.raise_user_error('missing_company_regime_tax', {
-                    'company': self.company.rec_name,
-                    })
-        if not self.party.regime_tax:
-            self.raise_user_error('missing_party_regime_tax', {
-                    'party': self.party.rec_name,
-                    })
-        """
-
-    @fields.depends('pos', 'party', 'type', 'invoice_type')
-    def on_change_pos(self, name=None):
-        if not self.pos:
-            return {'invoice_type': None}
-        res = {}
-        return res
-
     def set_number(self):
         if self.number:
             return
@@ -128,9 +98,9 @@ class Invoice:
         if self.type == 'out_invoice' or self.type == 'out_credit_note':
             vals = {}
             Sequence = Pool().get('ir.sequence')
-            if not self.invoice_type:
-                self.raise_user_error('not_invoice_type',)
-            vals['number'] = Sequence.get_id(self.invoice_type.invoice_sequence.id)
+            if not self.pos or not self.pos.pos_sequence:
+                self.raise_user_error('missing_pos',)
+            vals['number'] = Sequence.get_id(self.pos.pos_sequence.id)
             self.write([self], vals)
 
     @classmethod
@@ -143,8 +113,6 @@ class Invoice:
                 invoice.create_move()
             else:
                 invoice.set_number()
-                if not invoice.invoice_type and invoice.invoice_type == 'out_invoice':
-                    invoice.raise_user_error('not_invoice_type')
                 if not invoice.pos or invoice.pos.pos_type != 'electronic':
                     continue
                 response_ok = invoice._create_electronic_voucher()
