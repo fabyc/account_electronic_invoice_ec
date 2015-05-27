@@ -19,8 +19,6 @@ BROADCAST_TYPE_SRI = [
 
 class Company:
     __name__ = 'company.company'
-    certificate = fields.Binary('Certificate GTA',
-        help="Certificado (.crt) de la empresa para webservices")
     private_key = fields.Binary('Private Key GTA',
         help="Clave Privada (.key) de la empresa para webservices")
     default_enviroment_type = fields.Selection(ENVIROMENT_TYPE,

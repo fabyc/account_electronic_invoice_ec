@@ -6,8 +6,6 @@
             <field name="default_enviroment_type"/>
             <label name="response_lead_time"/>
             <field name="response_lead_time"/>
-            <label name="certificate"/>
-            <field name="certificate"/>
             <label name="private_key"/>
             <field name="private_key"/>
             <label name="ws_url"/>
