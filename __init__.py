@@ -10,7 +10,6 @@ from .contingency_keys import *
 
 def register():
     Pool.register(
-        Address,
         Company,
         PosSequence,
         Pos,
