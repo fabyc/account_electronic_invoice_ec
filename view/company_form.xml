@@ -2,6 +2,8 @@
 <data>
     <xpath expr="/form/notebook/page[@id='reports']" position="after">
         <page string="GTA WS" id="gta" col="4">
+            <label name="connection_mode"/>
+            <field name="connection_mode"/>
             <label name="default_enviroment_type"/>
             <field name="default_enviroment_type"/>
             <label name="response_lead_time"/>

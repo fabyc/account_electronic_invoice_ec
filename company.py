@@ -27,12 +27,16 @@ class Company:
         help="Tiempo de espera maximo de respuesta de GTA")
     ws_url = fields.Char('Web Service Url')
     ws_test_url = fields.Char('Web Test Service Url')
-    #gta_user = fields.Char('User GTA')
     gta_user_password_hash = fields.Char('GTA User Password')
     gta_user_password = fields.Function(fields.Char('Password'), getter='get_password',
         setter='set_password')
     broadcast_type = fields.Selection(BROADCAST_TYPE_SRI, 'Broadcast Type', 
         required=False)
+    connection_mode = fields.Selection([
+                ('', ''),
+                ('out_connection', 'Out Connection'),
+                ('on_line', 'On Line'),
+            ], 'Connection Mode')
 
     def gta_authenticate(self, service="wsfe"):
         "Authenticate against GTA, returns token, sign, err_msg (dict)"
@@ -40,7 +44,6 @@ class Company:
         auth_data = {}
 
         # get the authentication credentials:
-        certificate = str(self.certificate)
         private_key = str(self.private_key)
 
         # call the helper function to obtain the access ticket:
