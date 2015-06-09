@@ -4,7 +4,6 @@ from .invoice import *
 from .company import *
 from .sale import *
 from .pos import *
-from .address import *
 from .electronic_voucher import *
 from .contingency_keys import *
 

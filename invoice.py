@@ -51,6 +51,7 @@ class Invoice:
            'invoice', 'Electronic Invoice', readonly=True)
     send_sms = fields.Boolean('Send SMS', states={
             'readonly': True,
+            'invisible': Eval('type') != 'out_invoice',
             })
     barcode = fields.Char('Barcode', states={
             'readonly': True,
