@@ -18,6 +18,8 @@
             <field name="broadcast_type"/>
             <label name="gta_user_password_hash"/>
             <field name="gta_user_password_hash" widget="password"/>
+            <separator name="contingency_keys" colspan="4"/>
+            <field name="contingency_keys" colspan="4"/>
         </page>
     </xpath>
 </data>

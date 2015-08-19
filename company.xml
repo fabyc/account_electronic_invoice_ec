@@ -1,6 +1,21 @@
 <?xml version="1.0"?>
 <tryton>
     <data>
+        <record model="ir.ui.view" id="add_keys_start_view_form">
+            <field name="model">company.add_keys.start</field>
+            <field name="type">form</field>
+            <field name="name">add_keys_form</field>
+        </record>
+        <record model="ir.action.wizard" id="act_add_keys">
+            <field name="name">Add Keys</field>
+            <field name="wiz_name">company.add_keys</field>
+        </record>
+        <record model="ir.action.keyword" id="action_add_keys_keyword">
+            <field name="keyword">form_action</field>
+            <field name="model">company.company,-1</field>
+            <field name="action" ref="act_add_keys"/>
+        </record>
+
         <record model="ir.ui.view" id="company_view_form">
             <field name="model">company.company</field>
             <field name="type">form</field>

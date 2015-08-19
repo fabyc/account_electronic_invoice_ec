@@ -1,9 +1,11 @@
 #! -*- coding: utf8 -*-
 
-from trytond.model import fields
+from trytond.model import fields, ModelView
 from trytond.pool import PoolMeta, Pool
+from trytond.wizard import Wizard, StateTransition, StateView, Button
+from trytond.transaction import Transaction
 
-__all__ = ['Company']
+__all__ = ['Company', 'AddKeysStart', 'AddKeys']
 __metaclass__ = PoolMeta
 
 ENVIROMENT_TYPE = [
@@ -37,6 +39,7 @@ class Company:
                 ('out_connection', 'Out Connection'),
                 ('on_line', 'On Line'),
             ], 'Connection Mode')
+    contingency_keys = fields.Text('Contingency Keys', readonly=True)
 
     def gta_authenticate(self, service="wsfe"):
         "Authenticate against GTA, returns token, sign, err_msg (dict)"
@@ -74,3 +77,28 @@ class Company:
                         'gta_user_password_hash': User.hash_password(value),
                         }])
         cls.write(*to_write)
+
+
+class AddKeysStart(ModelView):
+    'Add Keys Start'
+    __name__ = 'company.add_keys.start'
+    keys = fields.Binary('Contingency Keys', required=True)
+
+
+class AddKeys(Wizard):
+    'Add Keys'
+    __name__ = 'company.add_keys'
+    start = StateView('company.add_keys.start',
+            'account_electronic_invoice_ec.add_keys_start_view_form', [
+            Button('Cancel', 'end', 'tryton-cancel'),
+            Button('Add', 'accept', 'tryton-ok', default=True),
+            ])
+    accept = StateTransition()
+
+    def transition_accept(self):
+        pool = Pool()
+        Company = pool.get('company.company')
+        company = Company(Transaction().context['active_id'])
+        if company:
+            Company.write([company], {'contingency_keys': str(self.start.keys)})
+        return 'end'
