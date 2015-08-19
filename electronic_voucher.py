@@ -94,12 +94,10 @@ class ElectronicVoucher(ModelSQL, ModelView):
     pyws_cae = fields.Char('CAE', readonly=True,
        help="Authorization Code return by GTA")
     pygtaws_barcode = fields.Char('Barcode', readonly=True,)
-    """
-    pysriws_cae_due_date = fields.Date('Vencimiento CAE', readonly=True,
-       help="Date limit for verification CAE, returned by GTA")
-    pysriws_number = fields.Char('Number', readonly=True,
-            help="Invoice Number send to GTA")
-    """
+    authorization_number = fields.Char('Authorization Number', readonly=True)
+    authorization_state = fields.Char('Authorization State', readonly=True)
+    access_key = fields.Char('Access Key', readonly=True)
+
 
     @classmethod
     def __setup__(cls):
@@ -125,14 +123,6 @@ class ElectronicVoucher(ModelSQL, ModelView):
         logger.info('Token send it...! ')
         if value == 'x' * 10:
             return
-        #to_write = []
-        """
-        for company in companies:
-            to_write.extend([[company], {
-                        'signature_token': cls.hash_password(value),
-                        }])
-        cls.write(*to_write)
-        """
 
     @classmethod
     def _get_serie(cls):
@@ -325,8 +315,6 @@ class ElectronicVoucher(ModelSQL, ModelView):
         total_withholdings  = []
         total_with_taxes = Decimal(0)
         
-        #iva_used_codes = []
-        #iva_ret_codes = []
         ret_used_codes = []
         default_ret_codes = ['327', '328', '3']
 

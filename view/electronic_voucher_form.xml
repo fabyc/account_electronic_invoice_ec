@@ -20,6 +20,12 @@ this repository contains the full copyright notices and license terms. -->
     <field name="signature_token"/>
     <label name="pyws_cae"/>
     <field name="pyws_cae"/>
+    <label name="authorization_number"/>
+    <field name="authorization_number"/>
+    <label name="authorization_state"/>
+    <field name="authorization_state"/>
+    <label name="access_key"/>
+    <field name="access_key"/>
     <separator name="raw_xml" colspan="4"/>
     <field name="raw_xml" colspan="4"/>
     <separator name="xml_response" colspan="4"/>
