@@ -128,20 +128,6 @@ class Invoice:
         print "sending key to gta..."
         return False
 
-    """
-    @classmethod
-    @ModelView.button
-    @Workflow.transition('posted')
-    def post(cls, invoices):
-        Move = Pool().get('account.move')
-
-        moves = []
-        for invoice in invoices:
-            invoice.set_number()
-            moves.append(invoice.create_move())
-        Move.post(moves)
-    """
-
     def _set_barcode(self):
         if self.type in ('out_invoice', 'out_credit_note'):
             barcode = '9782212110708'

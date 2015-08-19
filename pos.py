@@ -34,33 +34,6 @@ class Pos(ModelSQL, ModelView):
                 'Pos Sequence is already used by another POS!'),
         ]
 
-    """
-    pysriws_electronic_invoice_service = fields.Selection([
-            ('', ''),
-            ('wsfe', u'Mercado interno -sin detalle- RG2485 (WSFEv1)'),
-            ('wsmtxca',u'Mercado interno -con detalle- RG2904 (WSMTXCA)'),
-            ('wsbfe', u'Bono Fiscal -con detalle- RG2557 (WSMTXCA)'),
-            ('wsfex', u'Exportación -con detalle- RG2758 (WSFEXv1)'),
-        ], u'SRI Web Service',
-        states={
-            'invisible': Eval('pos_type') != 'electronic',
-            'required': Eval('pos_type') == 'electronic',
-            }, depends=['pos_type'],
-        help=u"Habilita la facturación electrónica por webservices SRI")
-
-    @staticmethod
-    def default_pos_type():
-        return 'manual'
-
-    @classmethod
-    def get_name(cls, account_pos, name):
-        res = {}
-        for pos in cls.browse(account_pos):
-            res[pos.id] = str(pos.number)+ ' - '+\
-            dict(pos.fields_get(fields_names=['pos_type'])\
-            ['pos_type']['selection'])[pos.pos_type]
-        return res
-    """
 
 class PosSequence(ModelSQL, ModelView):
     'Point of Sale Sequences'
