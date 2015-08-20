@@ -30,8 +30,8 @@ class Company:
     ws_url = fields.Char('Web Service Url')
     ws_test_url = fields.Char('Web Test Service Url')
     gta_user_password_hash = fields.Char('GTA User Password')
-    gta_user_password = fields.Function(fields.Char('Password'), getter='get_password',
-        setter='set_password')
+    gta_user_password = fields.Function(fields.Char('Password'),
+        getter='get_password', setter='set_password')
     broadcast_type = fields.Selection(BROADCAST_TYPE_SRI, 'Broadcast Type', 
         required=False)
     connection_mode = fields.Selection([
@@ -72,10 +72,10 @@ class Company:
         if value == 'x' * 10:
             return
         to_write = []
-        for user in companies:
-            to_write.extend([[user], {
+        for company in companies:
+            to_write.extend([[company], {
                         'gta_user_password_hash': User.hash_password(value),
-                        }])
+                    }])
         cls.write(*to_write)
 
 

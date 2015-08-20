@@ -16,8 +16,8 @@
             <field name="ws_test_url"/>
             <label name="broadcast_type"/>
             <field name="broadcast_type"/>
-            <label name="gta_user_password_hash"/>
-            <field name="gta_user_password_hash" widget="password"/>
+            <label name="gta_user_password"/>
+            <field name="gta_user_password" widget="password"/>
             <separator name="contingency_keys" colspan="4"/>
             <field name="contingency_keys" colspan="4"/>
         </page>
